@@ -1608,12 +1608,23 @@
 
     if ('serviceWorker' in navigator) {
       let hadController = !!navigator.serviceWorker.controller;
+      let pendingReload = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (hadController) { window.location.reload(); return; }
-        hadController = true;
+        if (!hadController) { hadController = true; return; }
+        if (document.visibilityState === 'visible') window.location.reload();
+        else pendingReload = true;
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (pendingReload && document.visibilityState === 'visible') window.location.reload();
       });
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('SW:', err));
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          const check = () => reg.update().catch(() => {});
+          setInterval(check, 60000);
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') check();
+          });
+        }).catch((err) => console.warn('SW:', err));
       });
     }
 

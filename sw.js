@@ -1,4 +1,4 @@
-const CACHE = 'quran-app-v4';
+const CACHE = 'quran-app-v5';
 const STATIC = [
   './',
   './index.html',
@@ -34,8 +34,27 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // Uygulama kabuğu: cache-first
-  if (url.origin === location.origin) {
+  // Ağdan gelen (API) istekler: network-first, çevrimdışı fallback cache
+  if (url.origin !== location.origin) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.ok && shouldCacheAPI(url, res)) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // Ağdan gelen (API) istekler: network-first, çevrimdışı fallback cache
+  const isHeavy = /\.(png|jpg|jpeg|svg|mp3|webp|ico)$/i.test(url.pathname);
+
+  if (isHeavy) {
+    // görsel/ses: önce cache (hız + kota), yoksa indir + cache'le
     e.respondWith(
       caches.match(req).then((hit) => hit || fetch(req).then((res) => {
         const copy = res.clone();
@@ -46,16 +65,14 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // API'ler: network-first, çevrimdışı fallback cache
+  // kabuk (html/js/json): HER ZAMAN taze içerik dene, çevrimdışıysa cache
   e.respondWith(
     fetch(req)
       .then((res) => {
-        if (res.ok && shouldCacheAPI(url, res)) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
-        }
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy));
         return res;
       })
-      .catch(() => caches.match(req))
+      .catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
   );
 });
