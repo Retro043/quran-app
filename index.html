@@ -16,6 +16,7 @@
   <style>
     :root {
       --bg: #0b1220;
+      --bg-veil: rgba(11, 18, 32, 0.80);
       --card: rgba(255, 255, 255, 0.06);
       --card-border: rgba(255, 255, 255, 0.10);
       --text: #e8eefc;
@@ -27,6 +28,7 @@
     }
     [data-theme="light"] {
       --bg: #f4f7fb;
+      --bg-veil: rgba(244, 247, 251, 0.88);
       --card: rgba(255, 255, 255, 0.9);
       --card-border: rgba(15, 30, 60, .10);
       --text: #12203a;
@@ -41,6 +43,8 @@
       background:
         radial-gradient(1200px 600px at 80% -10%, rgba(61, 220, 151, .12), transparent 60%),
         radial-gradient(900px 500px at -10% 30%, rgba(110, 168, 254, .12), transparent 55%),
+        linear-gradient(var(--bg-veil), var(--bg-veil)),
+        url('./assets/kaaba.jpg') center / cover no-repeat,
         var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -472,7 +476,7 @@
           <p id="ayahArabic" class="ayah-arabic"></p>
           <p id="ayahRef" class="ayah-ref"></p>
           <p id="ayahTranslation" class="ayah-translation"></p>
-          <audio id="ayahAudio" controls preload="none" hidden></audio>
+          <audio id="ayahAudio" controls preload="auto" hidden></audio>
           <audio id="adhanAudio" preload="auto" src="./assets/adhan.mp3"></audio>
           <div class="ayah-actions">
             <button id="copyBtn" type="button">📋 Kopyala</button>
@@ -675,8 +679,13 @@
       els.translation.textContent = translation?.text?.trim() || '';
 
       if (audio?.audio) {
+        const fresh = els.audio.src !== audio.audio;
         els.audio.hidden = false;
         els.audio.src = audio.audio;
+        if (fresh) {
+          els.audio.currentTime = 0;
+          els.audio.play().catch(() => {});
+        }
       } else {
         els.audio.hidden = true;
         els.audio.removeAttribute('src');
@@ -866,7 +875,24 @@
 
     els.newBtn.addEventListener('click', loadRandom);
     els.translationSelect.addEventListener('change', loadRandom);
-    els.audioSelect.addEventListener('change', loadRandom);
+    els.audioSelect.addEventListener('change', refreshAudio);
+
+    async function refreshAudio() {
+      if (!state.current) { loadRandom(); return; }
+      const { arabic } = state.current;
+      const ref = `${arabic.surah.number}:${arabic.numberInSurah}`;
+      try {
+        const res = await fetchJSON(`${API}/ayah/${ref}/editions/${els.audioSelect.value}`);
+        const items = Array.isArray(res.data) ? res.data : [res.data];
+        const audio = items.find((d) => d.edition.format === 'audio');
+        if (audio) {
+          state.current.audio = audio;
+          render();
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
     /* ================= ÜLKE / ŞEHİR / EZAN VAKİTLERİ ================= */
     const ADHAN_BASE = 'https://api.aladhan.com/v1';
