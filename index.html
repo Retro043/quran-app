@@ -390,6 +390,42 @@
     }
     .footer-links a { color: var(--muted); text-decoration: none; }
     .footer-links a:hover { color: var(--accent); }
+    .footer-links .ver { color: var(--muted); opacity: .7; }
+
+    /* ---------- Kıble pusulası ---------- */
+    .compass {
+      position: relative; width: 158px; height: 158px; margin: 6px auto 10px;
+      border-radius: 50%; border: 2px solid var(--card-border);
+      background: radial-gradient(circle at 50% 32%, rgba(110, 168, 254, .14), rgba(0, 0, 0, .22));
+      box-shadow: var(--shadow);
+    }
+    .compass-dial {
+      position: absolute; inset: 7px; border-radius: 50%;
+      border: 1px dashed rgba(255, 255, 255, .16);
+      transition: transform .1s linear;
+    }
+    .cd { position: absolute; font-size: 12px; font-weight: 700; color: var(--muted); }
+    .cd-n { top: 2px; left: 50%; transform: translateX(-50%); color: var(--accent); }
+    .cd-s { bottom: 2px; left: 50%; transform: translateX(-50%); }
+    .cd-e { right: 5px; top: 50%; transform: translateY(-50%); }
+    .cd-w { left: 5px; top: 50%; transform: translateY(-50%); }
+    .qibla-arrow {
+      position: absolute; inset: 0; pointer-events: none;
+      transition: transform .1s linear;
+    }
+    .qibla-arrow span {
+      position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+      color: var(--accent); font-size: 17px;
+      text-shadow: 0 0 8px rgba(61, 220, 151, .65);
+    }
+    .compass-center {
+      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(11, 18, 32, .72); border: 1px solid var(--card-border);
+      display: grid; place-items: center; font-size: 17px; z-index: 2;
+    }
+    .qibla-readout { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+    .qibla-readout b { display: block; font-size: 20px; color: var(--text); }
   </style>
 </head>
 <body>
@@ -540,6 +576,26 @@
       </div>
 
       <div class="panel">
+        <div class="panel-title"><span>🧭 Kıble Bulucu</span></div>
+        <div class="compass">
+          <div class="compass-dial" id="qiblaDial">
+            <span class="cd cd-n">K</span>
+            <span class="cd cd-e">D</span>
+            <span class="cd cd-s">G</span>
+            <span class="cd cd-w">B</span>
+          </div>
+          <div class="qibla-arrow" id="qiblaArrow"><span>▲</span></div>
+          <div class="compass-center">🕋</div>
+        </div>
+        <div class="qibla-readout">
+          <b id="qiblaDeg">—°</b>
+          <span id="qiblaHint">Pusulayı başlat · telefonu düz tut</span>
+        </div>
+        <button id="qiblaStart" class="btn-block" type="button">▶ Pusulayı Başlat</button>
+        <p class="hint">Telefon manyetometresiyle çalışır; metal ve mıknatıstan uzak tutun.</p>
+      </div>
+
+      <div class="panel">
         <div class="panel-title"><span>🔊 Ezan Sesi</span></div>
         <div class="setting-row">
           <span>Vaktinde çal</span>
@@ -561,6 +617,7 @@
 
   <footer class="wrap footer-links">
     <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
+    <span class="ver"> · Quran v1.1.0</span>
   </footer>
 
   <script type="module">
@@ -613,6 +670,11 @@
       weatherBox: document.getElementById('weatherBox'),
       weatherRefresh: document.getElementById('weatherRefresh'),
       installBtn: document.getElementById('installBtn'),
+      qiblaDial: document.getElementById('qiblaDial'),
+      qiblaArrow: document.getElementById('qiblaArrow'),
+      qiblaDeg: document.getElementById('qiblaDeg'),
+      qiblaHint: document.getElementById('qiblaHint'),
+      qiblaStart: document.getElementById('qiblaStart'),
     };
 
     const state = { current: null, view: 'random' };
@@ -620,7 +682,7 @@
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     async function fetchJSON(url) {
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     }
@@ -683,6 +745,7 @@
         els.audio.hidden = false;
         els.audio.src = audio.audio;
         if (fresh) {
+          stopAdhan();
           els.audio.currentTime = 0;
           els.audio.play().catch(() => {});
         }
@@ -1349,13 +1412,17 @@
         const el = els.adhanAudio;
         if (el) {
           try {
+            if (els.audio) els.audio.pause();
             el.pause();
             el.currentTime = 0;
             el.volume = 0.95;
-            el.onended = () => { playing = false; };
+            els.testSound.textContent = '⏹ Durdur';
+            el.onended = () => { playing = false; els.testSound.textContent = '▶ Test et'; };
+            el.onerror = () => { playing = false; els.testSound.textContent = '▶ Test et'; };
             await el.play();
             return;
           } catch (e) {
+            els.testSound.textContent = '▶ Test et';
             console.warn('Ezan kaydı çalınamadı, sentez geri düşüyor:', e);
           }
         }
@@ -1391,6 +1458,13 @@
     function soundOn() { return els.soundOn.checked; }
     function soundMode() { return els.soundMode.value; }
 
+    function stopAdhan() {
+      const a = els.adhanAudio;
+      if (a) { a.pause(); a.currentTime = 0; }
+      playing = false;
+      els.testSound.textContent = '▶ Test et';
+    }
+
     els.soundOn.checked = localStorage.getItem('qz_sound_on') !== '0';
     els.soundMode.value = localStorage.getItem('qz_sound_mode') || 'adhan';
     els.soundOn.addEventListener('change', () => {
@@ -1399,7 +1473,10 @@
     els.soundMode.addEventListener('change', () => {
       localStorage.setItem('qz_sound_mode', els.soundMode.value);
     });
-    els.testSound.addEventListener('click', () => playSound(soundMode()));
+    els.testSound.addEventListener('click', () => {
+      if (els.adhanAudio && !els.adhanAudio.paused) { stopAdhan(); return; }
+      playSound(soundMode());
+    });
 
     /* ---- vaktinde tetik ---- */
     function maybeFireAdhan() {
@@ -1422,6 +1499,97 @@
       maybeFireAdhan();
     }
 
+    /* ================= KIBLE PUSULASI ================= */
+    const KAABA = { lat: 21.4225, lng: 39.826206 };
+    const qib = { bearing: null, dist: null, smooth: null, sensor: false, active: false };
+
+    function normDelta(a) { return ((a + 540) % 360) - 180; }
+
+    function calcBearing(lat, lng) {
+      const f1 = lat * Math.PI / 180, f2 = KAABA.lat * Math.PI / 180;
+      const dl = (KAABA.lng - lng) * Math.PI / 180;
+      const y = Math.sin(dl) * Math.cos(f2);
+      const x = Math.cos(f1) * Math.sin(f2) - Math.sin(f1) * Math.cos(f2) * Math.cos(dl);
+      return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+    }
+
+    function calcDist(lat, lng) {
+      const R = 6371, r = Math.PI / 180;
+      const dLat = (KAABA.lat - lat) * r, dLng = (KAABA.lng - lng) * r;
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat * r) * Math.cos(KAABA.lat * r) * Math.sin(dLng / 2) ** 2;
+      return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+    }
+
+    function renderQibla() {
+      if (qib.bearing == null) return;
+      const h = qib.smooth ?? 0;
+      const delta = normDelta(qib.bearing - h);
+      els.qiblaDial.style.transform = `rotate(${-h}deg)`;
+      els.qiblaArrow.style.transform = `rotate(${qib.bearing - h}deg)`;
+      els.qiblaDeg.textContent = `${Math.round(qib.bearing)}°`;
+      const dTxt = qib.dist != null ? ` · ${qib.dist} km` : '';
+      if (!qib.sensor) {
+        els.qiblaHint.textContent = `Kıble açısı (kuzey üstte)${dTxt}`;
+      } else if (Math.abs(delta) <= 6) {
+        els.qiblaHint.textContent = `Kıble tam karşında 🕋${dTxt}`;
+      } else {
+        els.qiblaHint.textContent = `${delta > 0 ? 'Sağa' : 'Sola'} ${Math.abs(Math.round(delta))}° dön${dTxt}`;
+      }
+    }
+
+    function onOrient(e) {
+      if (!qib.active) return;
+      let h = null;
+      if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
+        h = e.webkitCompassHeading;
+      } else if (e.alpha != null) {
+        h = (360 - e.alpha) % 360;
+      }
+      if (h == null) return;
+      qib.sensor = true;
+      if (qib.smooth == null) qib.smooth = h;
+      else qib.smooth = (qib.smooth + normDelta(h - qib.smooth) * 0.12 + 360) % 360;
+      renderQibla();
+    }
+    window.addEventListener('deviceorientationabsolute', onOrient, true);
+    window.addEventListener('deviceorientation', onOrient, true);
+
+    els.qiblaStart.addEventListener('click', async () => {
+      els.qiblaStart.disabled = true;
+      try {
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+          const p = await DeviceOrientationEvent.requestPermission();
+          if (p !== 'granted') {
+            els.qiblaHint.textContent = 'Pusula izni verilmedi';
+            els.qiblaStart.disabled = false;
+            return;
+          }
+        }
+        qib.active = true;
+        navigator.geolocation.getCurrentPosition((pos) => {
+          qib.bearing = calcBearing(pos.coords.latitude, pos.coords.longitude);
+          qib.dist = calcDist(pos.coords.latitude, pos.coords.longitude);
+          els.qiblaStart.textContent = '↻ Yenile';
+          els.qiblaStart.disabled = false;
+          renderQibla();
+          setTimeout(() => {
+            if (!qib.sensor) els.qiblaHint.textContent =
+              `Cihazda pusula sensörü yok — kıble açısı: ${Math.round(qib.bearing)}°${qib.dist != null ? ` · ${qib.dist} km` : ''}`;
+          }, 2000);
+        }, (err) => {
+          qib.active = false;
+          els.qiblaHint.textContent = 'Konum izni gerekli';
+          els.qiblaStart.disabled = false;
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+      } catch (err) {
+        qib.active = false;
+        els.qiblaHint.textContent = 'Pusula desteklenmiyor';
+        els.qiblaStart.disabled = false;
+      }
+    });
+
     /* ================= PWA: yükle + service worker ================= */
     let deferredPrompt = null;
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -1439,6 +1607,11 @@
     window.addEventListener('appinstalled', () => { els.installBtn.hidden = true; });
 
     if ('serviceWorker' in navigator) {
+      let hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadController) { window.location.reload(); return; }
+        hadController = true;
+      });
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('SW:', err));
       });
