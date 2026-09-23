@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1220" />
+  <meta name="description" content="Quran (القرآن) — ayetler, ezan vakitleri, hava durumu, arama ve favoriler" />
+  <title>Quran (القرآن)</title>
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./assets/icon-192.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Quran" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: rgba(255, 255, 255, 0.06);
+      --card-border: rgba(255, 255, 255, 0.10);
+      --text: #e8eefc;
+      --muted: #93a1bd;
+      --accent: #3ddc97;
+      --accent-2: #6ea8fe;
+      --radius: 18px;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    }
+    [data-theme="light"] {
+      --bg: #f4f7fb;
+      --card: rgba(255, 255, 255, 0.9);
+      --card-border: rgba(15, 30, 60, .10);
+      --text: #12203a;
+      --muted: #5b6b86;
+      --shadow: 0 10px 30px rgba(20, 40, 80, .12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(61, 220, 151, .12), transparent 60%),
+        radial-gradient(900px 500px at -10% 30%, rgba(110, 168, 254, .12), transparent 55%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .wrap { width: min(1240px, 100% - 32px); margin: 0 auto; }
+
+    /* ---------- Header ---------- */
+    header {
+      position: sticky; top: 0; z-index: 10;
+      backdrop-filter: blur(12px);
+      background: color-mix(in srgb, var(--bg) 70%, transparent);
+      border-bottom: 1px solid var(--card-border);
+    }
+    .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 10px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+    .brand .logo { font-size: 22px; }
+    .brand-ar {
+      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-weight: 700; color: var(--accent); margin-inline-start: 4px;
+    }
+    .bar-actions { display: flex; gap: 10px; align-items: center; }
+    .clock {
+      font-variant-numeric: tabular-nums;
+      font-size: 14px; color: var(--muted);
+      padding: 6px 10px; border-radius: 10px;
+      background: var(--card); border: 1px solid var(--card-border);
+    }
+
+    /* ---------- Geçiş çubuğu (tab bar) ---------- */
+    .tabbar {
+      display: flex; gap: 6px;
+      padding: 0 0 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabbar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 0 0 auto;
+      display: flex; align-items: center; gap: 7px;
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-size: 14px; font-weight: 600;
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--muted);
+    }
+    .tab-btn:hover { color: var(--text); border-color: var(--accent-2); }
+    .tab-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #06131f; border-color: transparent;
+    }
+    .tab-btn .badge {
+      font-size: 11px; font-weight: 700;
+      background: rgba(0, 0, 0, .25);
+      border-radius: 999px; padding: 1px 7px;
+    }
+    .tab-btn.active .badge { background: rgba(6, 19, 31, .20); }
+
+    /* ---------- Butonlar / alanlar ---------- */
+    button, select, input {
+      font: inherit; color: inherit;
+      border-radius: 12px; border: 1px solid var(--card-border);
+      background: var(--card); padding: 10px 14px;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+    button { cursor: pointer; }
+    button:hover, select:hover, input:hover { border-color: var(--accent); }
+    button:active { transform: scale(.97); }
+    button.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #06131f; border: none; font-weight: 700;
+    }
+    button.ghost { background: transparent; }
+    button:disabled { opacity: .55; cursor: wait; }
+    .icon-btn { padding: 10px; width: 42px; height: 42px; display: grid; place-items: center; }
+    input::placeholder { color: var(--muted); }
+    input:focus, select:focus, button:focus-visible {
+      outline: none; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(61, 220, 151, .22);
+    }
+
+    /* ---------- Görünüm / ana ---------- */
+    .center main, main { padding: 0; }
+    .view[hidden] { display: none; }
+
+    /* ---------- Arama çubuğu ---------- */
+    .searchbar {
+      display: flex; gap: 8px; margin-bottom: 16px;
+    }
+    .searchbar .search-field {
+      flex: 1; position: relative; display: flex; align-items: center;
+    }
+    .searchbar .search-field input {
+      width: 100%; padding-left: 42px; padding-right: 42px;
+    }
+    .searchbar .s-icon {
+      position: absolute; left: 14px; color: var(--muted); pointer-events: none;
+    }
+    .searchbar .s-clear {
+      position: absolute; right: 8px;
+      width: 30px; height: 30px; padding: 0;
+      display: none; place-items: center;
+      border: none; background: transparent; border-radius: 50%;
+    }
+    .searchbar .s-clear.show { display: grid; }
+    .searchbar .s-clear:hover { background: rgba(255, 255, 255, .10); }
+
+    /* ---------- Kontroller (rastgele sekmesi) ---------- */
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      margin-bottom: 18px;
+    }
+    .controls .grow { flex: 1 1 200px; }
+    .controls label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted); }
+    .controls select { min-width: 160px; }
+
+    /* ---------- Ayet kartı ---------- */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .ayah-meta {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--card-border);
+      font-size: 13px; color: var(--muted);
+    }
+    .chip {
+      padding: 4px 10px; border-radius: 999px;
+      background: rgba(110, 168, 254, .14);
+      border: 1px solid rgba(110, 168, 254, .30);
+      color: var(--text);
+    }
+    .chip.accent { background: rgba(61, 220, 151, .14); border-color: rgba(61, 220, 151, .35); }
+
+    .ayah-arabic {
+      direction: rtl; text-align: center;
+      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-size: clamp(26px, 5vw, 40px);
+      line-height: 2;
+      padding: 34px 24px 18px;
+      margin: 0;
+    }
+    .ayah-translation {
+      text-align: center;
+      color: var(--muted);
+      font-size: clamp(15px, 2.4vw, 18px);
+      line-height: 1.7;
+      padding: 0 24px 10px;
+      margin: 0;
+    }
+    .ayah-ref {
+      text-align: center; font-size: 14px;
+      color: var(--accent); font-weight: 600;
+      padding: 6px 0 4px;
+    }
+    .ayah-actions {
+      display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+      padding: 18px; border-top: 1px solid var(--card-border);
+    }
+    audio { width: 100%; padding: 0 18px 16px; }
+
+    /* ---------- Liste kartları (arama / favoriler) ---------- */
+    .list { display: flex; flex-direction: column; gap: 12px; }
+    .row {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      display: flex; flex-direction: column; gap: 8px;
+      cursor: pointer;
+      transition: border-color .12s ease, transform .12s ease;
+    }
+    .row:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .row-top {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--muted);
+    }
+    .row-ref { color: var(--accent); font-weight: 700; }
+    .row-arabic {
+      direction: rtl; text-align: right;
+      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-size: 20px; line-height: 1.9;
+    }
+    .row-text {
+      color: var(--muted); font-size: 14px; line-height: 1.6;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .row-del {
+      border: none; background: transparent; color: var(--muted);
+      padding: 4px 8px; border-radius: 8px; font-size: 14px;
+    }
+    .row-del:hover { color: #ff8b8b; background: rgba(255, 139, 139, .12); }
+
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin-bottom: 14px;
+    }
+    .section-head h2 { margin: 0; font-size: 17px; }
+    .count { font-size: 13px; color: var(--muted); }
+
+    /* ---------- Yerleşim: sol/sağ paneller ---------- */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-areas: "next" "center" "times";
+      gap: 16px;
+      padding: 22px 0 40px;
+      align-items: start;
+    }
+    .center { grid-area: center; min-width: 0; }
+    .side-left { grid-area: times; }
+    .side-right { grid-area: next; }
+    .side { display: flex; flex-direction: column; gap: 14px; }
+    @media (min-width: 1100px) {
+      .layout {
+        grid-template-columns: 236px minmax(0, 1fr) 236px;
+        grid-template-areas: "times center next";
+      }
+      .side { position: sticky; top: 118px; }
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .panel-title {
+      font-size: 13px; font-weight: 700;
+      margin-bottom: 10px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .hijri-line { font-size: 12px; color: var(--muted); margin: 0 0 10px; line-height: 1.5; }
+    .city-label {
+      display: flex; flex-direction: column; gap: 5px;
+      font-size: 11px; color: var(--muted); margin-bottom: 10px;
+    }
+    .city-label select { width: 100%; padding: 8px 10px; font-size: 13px; }
+
+    .prayer-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+    .prayer-list li {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 10px; border-radius: 10px;
+      font-size: 13px;
+      border: 1px solid transparent;
+    }
+    .prayer-list li .p-name { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+    .prayer-list li .p-time { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .prayer-list li.next {
+      background: linear-gradient(135deg, rgba(61, 220, 151, .16), rgba(110, 168, 254, .14));
+      border-color: rgba(61, 220, 151, .45);
+    }
+    .prayer-list li.next .p-name,
+    .prayer-list li.next .p-time { color: var(--text); }
+    .prayer-list li.sunrise .p-name,
+    .prayer-list li.sunrise .p-time { opacity: .65; font-weight: 400; }
+
+    .next-name { font-size: 13px; color: var(--muted); }
+    .next-name b { color: var(--accent); }
+    .next-time { font-size: 20px; font-weight: 800; margin-top: 2px; }
+    .countdown {
+      font-variant-numeric: tabular-nums;
+      font-size: 26px; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      margin-top: 4px;
+    }
+
+    .setting-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      font-size: 13px; padding: 6px 0;
+    }
+    .sound-choice {
+      display: flex; flex-direction: column; gap: 5px;
+      font-size: 11px; color: var(--muted);
+      margin: 6px 0 10px;
+    }
+    .sound-choice select { width: 100%; padding: 8px 10px; font-size: 13px; }
+    .btn-block { width: 100%; font-size: 13px; font-weight: 600; }
+    .hint { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 10px 0 0; }
+    .panel .state { padding: 20px 10px; font-size: 13px; }
+
+    .geo-field {
+      display: flex; flex-direction: column; gap: 5px;
+      font-size: 11px; color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .geo-field select, .geo-field input {
+      width: 100%; padding: 8px 10px; font-size: 13px;
+    }
+    .geo-field input:disabled { opacity: .5; }
+
+    .weather-row { display: flex; align-items: center; gap: 10px; }
+    .weather-ico { font-size: 30px; line-height: 1; }
+    .weather-temp { font-size: 26px; font-weight: 800; line-height: 1.1; }
+    .weather-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .weather-meta { font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+    .weather-empty { font-size: 12px; color: var(--muted); line-height: 1.6; text-align: center; padding: 6px 0; }
+    .forecast {
+      margin-top: 8px; padding-top: 6px;
+      border-top: 1px dashed var(--card-border);
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .fc-row {
+      display: grid; grid-template-columns: 1fr auto auto auto;
+      gap: 8px; align-items: center;
+      font-size: 11px; color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .fc-row b { color: var(--text); font-weight: 700; }
+    .weather-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .weather-head .panel-title { margin-bottom: 0; }
+    .mini-refresh {
+      border: none; background: transparent; color: var(--muted);
+      font-size: 13px; padding: 2px 6px; border-radius: 8px;
+    }
+    .mini-refresh:hover { color: var(--accent); background: rgba(61, 220, 151, .12); }
+
+    /* ---------- Durumlar ---------- */
+    .state { text-align: center; padding: 50px 20px; color: var(--muted); }
+    .spinner {
+      width: 42px; height: 42px; margin: 0 auto 14px;
+      border-radius: 50%;
+      border: 3px solid var(--card-border);
+      border-top-color: var(--accent);
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { color: #ff8b8b; }
+
+    .footer-links {
+      padding: 0 0 26px; text-align: center; font-size: 12px;
+    }
+    .footer-links a { color: var(--muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="bar">
+        <div class="brand"><span class="logo">📖</span><span>Quran <span class="brand-ar">القرآن</span></span></div>
+        <div class="bar-actions">
+          <span id="clock" class="clock">--:--:--</span>
+          <button id="installBtn" class="icon-btn ghost" type="button" title="Uygulamayı yükle" hidden>📲</button>
+          <button id="themeToggle" class="icon-btn ghost" type="button" title="Tema">🌙</button>
+        </div>
+      </div>
+
+      <!-- Geçiş çubuğu -->
+      <nav class="tabbar" aria-label="Bölümler">
+        <button class="tab-btn active" data-view="random" type="button">🎲 Rastgele</button>
+        <button class="tab-btn" data-view="search" type="button">🔍 Ara</button>
+        <button class="tab-btn" data-view="favorites" type="button">★ Favoriler <span id="favBadge" class="badge">0</span></button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="wrap layout">
+    <!-- ============ SOL: VAKİTLER ============ -->
+    <aside class="side side-left">
+      <div class="panel">
+        <div class="panel-title"><span>🕌 Vakitler</span></div>
+        <p id="hijriLine" class="hijri-line">—</p>
+        <label class="geo-field">
+          Ülke
+          <select id="countrySelect">
+            <option value="TR">Turkey</option>
+          </select>
+        </label>
+        <label class="geo-field">
+          Şehir
+          <select id="citySelect"></select>
+          <input id="cityInput" hidden placeholder="Bu ülkede şehir listesi yok — yaz…" autocomplete="off" />
+        </label>
+        <ul id="prayerList" class="prayer-list">
+          <li><span class="p-name">Yükleniyor…</span></li>
+        </ul>
+      </div>
+    </aside>
+
+    <!-- ============ ORTA: İÇERİK ============ -->
+    <main class="center">
+    <!-- ============ RASTGELE ============ -->
+    <section id="viewRandom" class="view">
+      <div class="controls">
+        <label>
+          Meal / Çeviri
+          <select id="translationSelect">
+            <option value="tr.diyanet">Türkçe — Diyanet</option>
+            <option value="tr.yunus">Türkçe — Yunus Emre</option>
+            <option value="en.asad">English — Asad</option>
+            <option value="en.sahih">English — Sahih</option>
+          </select>
+        </label>
+        <label>
+          Ses (Kıraat)
+          <select id="audioSelect">
+            <option value="ar.alafasy">Mishary Alafasy</option>
+            <option value="ar.abdulbasitmurattal">Abdul Basit</option>
+            <option value="ar.husary">Husary</option>
+            <option value="ar.minshawi">Minshawi</option>
+          </select>
+        </label>
+        <div class="grow"></div>
+        <button id="newBtn" class="primary" type="button">↻ Yeni Ayet</button>
+      </div>
+
+      <article id="card" class="card" aria-live="polite">
+        <div id="loading" class="state">
+          <div class="spinner"></div>
+          <div id="loadingText">Rastgele ayet getiriliyor…</div>
+        </div>
+
+        <div id="errorBox" class="state error" hidden></div>
+
+        <div id="ayahView" hidden>
+          <div id="ayahMeta" class="ayah-meta"></div>
+          <p id="ayahArabic" class="ayah-arabic"></p>
+          <p id="ayahRef" class="ayah-ref"></p>
+          <p id="ayahTranslation" class="ayah-translation"></p>
+          <audio id="ayahAudio" controls preload="none" hidden></audio>
+          <div class="ayah-actions">
+            <button id="copyBtn" type="button">📋 Kopyala</button>
+            <button id="shareBtn" type="button">📤 Paylaş</button>
+            <button id="favBtn" type="button">☆ Favori</button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- ============ ARAMA ============ -->
+    <section id="viewSearch" class="view" hidden>
+      <div class="searchbar">
+        <div class="search-field">
+          <span class="s-icon">🔍</span>
+          <input id="searchInput" type="search" placeholder="Ayet içinde kelime ara… (ör. Rahman, sabır)" autocomplete="off" />
+          <button id="searchClear" class="s-clear" type="button" title="Temizle">✕</button>
+        </div>
+        <button id="searchBtn" class="primary" type="button">Ara</button>
+      </div>
+
+      <div class="section-head">
+        <h2>Sonuçlar</h2>
+        <span id="searchCount" class="count"></span>
+      </div>
+
+      <div id="searchResults" class="list">
+        <div class="state">Kelime yazıp <b>Ara</b> butonuna bas.<br />Sonuca tıklayınca ayet kartında açılır.</div>
+      </div>
+    </section>
+
+    <!-- ============ FAVORİLER ============ -->
+    <section id="viewFavorites" class="view" hidden>
+      <div class="section-head">
+        <h2>Favoriler</h2>
+        <span id="favCount" class="count"></span>
+      </div>
+      <div id="favList" class="list">
+        <div class="state">Henüz favori yok.<br />Ayet kartındaki <b>☆ Favori</b> ile ekle.</div>
+      </div>
+    </section>
+    </main>
+
+    <!-- ============ SAĞ: SIRADAKİ VAKİT + SES ============ -->
+    <aside class="side side-right">
+      <div class="panel">
+        <div class="panel-title"><span>⏳ Sıradaki Vakit</span></div>
+        <div id="nextName" class="next-name">—</div>
+        <div id="nextTime" class="next-time">--:--</div>
+        <div id="countdown" class="countdown">--:--:--</div>
+      </div>
+
+      <div class="panel">
+        <div class="weather-head">
+          <div class="panel-title"><span>🌤 Hava Durumu</span></div>
+          <button id="weatherRefresh" class="mini-refresh" type="button" title="Yenile">↻</button>
+        </div>
+        <div id="weatherBox" class="weather-box">
+          <div class="weather-empty">Yükleniyor…</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title"><span>🔊 Ezan Sesi</span></div>
+        <div class="setting-row">
+          <span>Vaktinde çal</span>
+          <input type="checkbox" id="soundOn" checked />
+        </div>
+        <label class="sound-choice">
+          Ses türü
+          <select id="soundMode">
+            <option value="adhan">Ezan sesi</option>
+            <option value="notif">Bildirim sesi</option>
+          </select>
+        </label>
+        <button id="testSound" class="btn-block" type="button">▶ Test et</button>
+        <p class="hint">Ses, sayfada ilk dokunuştan sonra aktifleşir (tarayıcı kuralı).</p>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="wrap footer-links">
+    <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
+  </footer>
+
+  <script type="module">
+    const API = 'https://api.alquran.cloud/v1';
+
+    const els = {
+      tabBtns: [...document.querySelectorAll('.tab-btn')],
+      views: {
+        random: document.getElementById('viewRandom'),
+        search: document.getElementById('viewSearch'),
+        favorites: document.getElementById('viewFavorites'),
+      },
+      loading: document.getElementById('loading'),
+      loadingText: document.getElementById('loadingText'),
+      errorBox: document.getElementById('errorBox'),
+      ayahView: document.getElementById('ayahView'),
+      meta: document.getElementById('ayahMeta'),
+      arabic: document.getElementById('ayahArabic'),
+      ref: document.getElementById('ayahRef'),
+      translation: document.getElementById('ayahTranslation'),
+      audio: document.getElementById('ayahAudio'),
+      newBtn: document.getElementById('newBtn'),
+      copyBtn: document.getElementById('copyBtn'),
+      shareBtn: document.getElementById('shareBtn'),
+      favBtn: document.getElementById('favBtn'),
+      translationSelect: document.getElementById('translationSelect'),
+      audioSelect: document.getElementById('audioSelect'),
+      themeToggle: document.getElementById('themeToggle'),
+      searchInput: document.getElementById('searchInput'),
+      searchBtn: document.getElementById('searchBtn'),
+      searchClear: document.getElementById('searchClear'),
+      searchResults: document.getElementById('searchResults'),
+      searchCount: document.getElementById('searchCount'),
+      favList: document.getElementById('favList'),
+      favCount: document.getElementById('favCount'),
+      favBadge: document.getElementById('favBadge'),
+      clock: document.getElementById('clock'),
+      countrySelect: document.getElementById('countrySelect'),
+      citySelect: document.getElementById('citySelect'),
+      cityInput: document.getElementById('cityInput'),
+      hijriLine: document.getElementById('hijriLine'),
+      prayerList: document.getElementById('prayerList'),
+      nextName: document.getElementById('nextName'),
+      nextTime: document.getElementById('nextTime'),
+      countdown: document.getElementById('countdown'),
+      soundOn: document.getElementById('soundOn'),
+      soundMode: document.getElementById('soundMode'),
+      testSound: document.getElementById('testSound'),
+      weatherBox: document.getElementById('weatherBox'),
+      weatherRefresh: document.getElementById('weatherRefresh'),
+      installBtn: document.getElementById('installBtn'),
+    };
+
+    const state = { current: null, view: 'random' };
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    async function fetchJSON(url) {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function editionList() {
+      return ['quran-uthmani', els.translationSelect.value, els.audioSelect.value].join(',');
+    }
+
+    function pickItems(res) {
+      const items = Array.isArray(res.data) ? res.data : [res.data];
+      return {
+        arabic: items.find((d) => d.edition.type === 'quran') || items[0],
+        translation: items.find((d) => d.edition.type === 'translation'),
+        audio: items.find((d) => d.edition.format === 'audio'),
+      };
+    }
+
+    /* ---------- Geçiş çubuğu ---------- */
+    function setView(name) {
+      state.view = name;
+      els.tabBtns.forEach((b) => b.classList.toggle('active', b.dataset.view === name));
+      Object.entries(els.views).forEach(([key, el]) => { el.hidden = key !== name; });
+    }
+    els.tabBtns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+
+    /* ---------- Kart durumları ---------- */
+    function showState(name) {
+      els.loading.hidden = name !== 'loading';
+      els.errorBox.hidden = name !== 'error';
+      els.ayahView.hidden = name !== 'view';
+    }
+    function showError(msg) {
+      els.errorBox.textContent = msg;
+      showState('error');
+    }
+    const chip = (text, accent = false) =>
+      `<span class="chip${accent ? ' accent' : ''}">${esc(text)}</span>`;
+
+    function renderMeta(d) {
+      els.meta.innerHTML = [
+        chip(`Sûre ${d.surah.number} · ${d.surah.englishName}`, true),
+        chip(d.surah.englishNameTranslation),
+        chip(`Âyet ${d.numberInSurah}/${d.surah.numberOfAyahs}`),
+        chip(d.surah.revelationType === 'Meccan' ? 'Mekkî' : 'Medenî'),
+        chip(`Cüz ${d.juz}`),
+        chip(`Sayfa ${d.page}`),
+        d.sajda ? chip('Secde ✓', true) : '',
+      ].join('');
+    }
+
+    function render() {
+      const { arabic, translation, audio } = state.current;
+      renderMeta(arabic);
+      els.arabic.textContent = arabic.text.trim();
+      els.ref.textContent = `${arabic.surah.englishName} ${arabic.surah.number}:${arabic.numberInSurah}`;
+      els.translation.textContent = translation?.text?.trim() || '';
+
+      if (audio?.audio) {
+        els.audio.hidden = false;
+        els.audio.src = audio.audio;
+      } else {
+        els.audio.hidden = true;
+        els.audio.removeAttribute('src');
+      }
+      syncFavBtn();
+    }
+
+    function applyResult(res) {
+      state.current = pickItems(res);
+      render();
+      showState('view');
+    }
+
+    /* ---------- Rastgele ---------- */
+    async function loadRandom() {
+      els.newBtn.disabled = true;
+      showState('loading');
+      els.loadingText.textContent = 'Rastgele ayet getiriliyor…';
+      try {
+        applyResult(await fetchJSON(`${API}/ayah/random/editions/${editionList()}`));
+      } catch (err) {
+        console.error(err);
+        showError('Ayet getirilemedi. İnternet bağlantını kontrol edip tekrar dene.');
+      } finally {
+        els.newBtn.disabled = false;
+      }
+    }
+
+    /* ---------- Belirli ayet (arama/favori tıklaması) ---------- */
+    async function loadAyah(ref) {
+      setView('random');
+      els.newBtn.disabled = true;
+      showState('loading');
+      els.loadingText.textContent = `${ref} getiriliyor…`;
+      try {
+        applyResult(await fetchJSON(`${API}/ayah/${ref}/editions/${editionList()}`));
+        document.getElementById('card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (err) {
+        console.error(err);
+        showError('Ayet getirilemedi. Tekrar dene.');
+      } finally {
+        els.newBtn.disabled = false;
+      }
+    }
+
+    /* ---------- Arama ---------- */
+    async function doSearch() {
+      const q = els.searchInput.value.trim();
+      els.searchClear.classList.toggle('show', q.length > 0);
+      if (q.length < 2) {
+        els.searchCount.textContent = '';
+        els.searchResults.innerHTML = '<div class="state">En az 2 harf yaz.</div>';
+        return;
+      }
+      els.searchBtn.disabled = true;
+      els.searchCount.textContent = 'aranıyor…';
+      els.searchResults.innerHTML = '<div class="state"><div class="spinner"></div>Aranıyor…</div>';
+      try {
+        const lang = els.translationSelect.value.startsWith('tr') ? 'tr' : 'en';
+        const res = await fetchJSON(
+          `${API}/search/${encodeURIComponent(q)}/all/${els.translationSelect.value}`
+        );
+        const matches = res.data?.matches || [];
+        els.searchCount.textContent = `${res.data?.count ?? matches.length} sonuç`;
+
+        if (!matches.length) {
+          els.searchResults.innerHTML = `<div class="state">"${esc(q)}" için sonuç yok.</div>`;
+          return;
+        }
+        els.searchResults.innerHTML = matches.map((m) => `
+          <article class="row" data-ref="${m.surah.number}:${m.numberInSurah}">
+            <div class="row-top">
+              <span class="row-ref">${esc(m.surah.englishName)} ${m.surah.number}:${m.numberInSurah}</span>
+              <span>${esc(lang.toUpperCase())} · ${esc(m.edition.name || '')}</span>
+            </div>
+            <div class="row-text">${esc(m.text)}</div>
+          </article>`).join('');
+      } catch (err) {
+        console.error(err);
+        els.searchCount.textContent = '';
+        els.searchResults.innerHTML = '<div class="state error">Arama başarısız. Tekrar dene.</div>';
+      } finally {
+        els.searchBtn.disabled = false;
+      }
+    }
+
+    els.searchBtn.addEventListener('click', doSearch);
+    els.searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+    els.searchInput.addEventListener('input', () => {
+      els.searchClear.classList.toggle('show', els.searchInput.value.length > 0);
+    });
+    els.searchClear.addEventListener('click', () => {
+      els.searchInput.value = '';
+      els.searchClear.classList.remove('show');
+      els.searchInput.focus();
+      els.searchCount.textContent = '';
+      els.searchResults.innerHTML = '<div class="state">Kelime yazıp <b>Ara</b> butonuna bas.</div>';
+    });
+    els.searchResults.addEventListener('click', (e) => {
+      const row = e.target.closest('.row[data-ref]');
+      if (row) loadAyah(row.dataset.ref);
+    });
+
+    /* ---------- Favoriler ---------- */
+    const getFavs = () => JSON.parse(localStorage.getItem('fav_ayahs') || '[]');
+    const setFavs = (list) => localStorage.setItem('fav_ayahs', JSON.stringify(list));
+
+    function currentKey() {
+      return `${state.current.arabic.surah.number}:${state.current.arabic.numberInSurah}`;
+    }
+    function syncFavBtn() {
+      const on = getFavs().some((f) => f.key === currentKey());
+      els.favBtn.textContent = on ? '★ Favori' : '☆ Favori';
+    }
+    function updateFavUI() {
+      const list = getFavs();
+      els.favBadge.textContent = list.length;
+      els.favCount.textContent = list.length ? `${list.length} ayet` : '';
+      if (!list.length) {
+        els.favList.innerHTML = '<div class="state">Henüz favori yok.<br />Ayet kartındaki <b>☆ Favori</b> ile ekle.</div>';
+        return;
+      }
+      els.favList.innerHTML = list.map((f) => `
+        <article class="row" data-ref="${f.key}">
+          <div class="row-top">
+            <span class="row-ref">${esc(f.surah?.englishName || '')} ${esc(f.key)}</span>
+            <button class="row-del" data-del="${esc(f.key)}" type="button" title="Sil">🗑</button>
+          </div>
+          <div class="row-arabic">${esc(f.text || '')}</div>
+        </article>`).join('');
+    }
+
+    els.favBtn.addEventListener('click', () => {
+      const list = getFavs();
+      const key = currentKey();
+      const idx = list.findIndex((f) => f.key === key);
+      if (idx >= 0) list.splice(idx, 1);
+      else {
+        const a = state.current.arabic;
+        list.unshift({
+          key,
+          text: a.text.trim(),
+          surah: { number: a.surah.number, englishName: a.surah.englishName },
+          numberInSurah: a.numberInSurah,
+        });
+      }
+      setFavs(list);
+      syncFavBtn();
+      updateFavUI();
+    });
+
+    els.favList.addEventListener('click', (e) => {
+      const del = e.target.closest('[data-del]');
+      if (del) {
+        e.stopPropagation();
+        setFavs(getFavs().filter((f) => f.key !== del.dataset.del));
+        updateFavUI();
+        syncFavBtn();
+        return;
+      }
+      const row = e.target.closest('.row[data-ref]');
+      if (row) loadAyah(row.dataset.ref);
+    });
+
+    /* ---------- Kart aksiyonları ---------- */
+    function plainText() {
+      const { arabic, translation } = state.current;
+      return [
+        arabic.text.trim(),
+        translation?.text?.trim() || '',
+        `— ${arabic.surah.englishName} ${arabic.surah.number}:${arabic.numberInSurah}`,
+        'alquran.cloud',
+      ].filter(Boolean).join('\n\n');
+    }
+
+    els.copyBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(plainText());
+      els.copyBtn.textContent = '✓ Kopyalandı';
+      setTimeout(() => (els.copyBtn.textContent = '📋 Kopyala'), 1500);
+    });
+
+    els.shareBtn.addEventListener('click', async () => {
+      const data = { text: plainText() };
+      if (navigator.share) await navigator.share(data);
+      else await navigator.clipboard.writeText(plainText());
+    });
+
+    els.newBtn.addEventListener('click', loadRandom);
+    els.translationSelect.addEventListener('change', loadRandom);
+    els.audioSelect.addEventListener('change', loadRandom);
+
+    /* ================= ÜLKE / ŞEHİR / EZAN VAKİTLERİ ================= */
+    const ADHAN_BASE = 'https://api.aladhan.com/v1';
+    const COUNTRIES_API = 'https://countriesnow.space/api/v0.1/countries';
+
+    const geo = { countries: [], byIso: null };
+
+    const FALLBACK_COUNTRIES = [{
+      iso2: 'TR',
+      country: 'Turkey',
+      cities: ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Konya', 'Adana',
+        'Gaziantep', 'Trabzon', 'Diyarbakır', 'Şanlıurfa', 'Samsun', 'Erzurum',
+        'Kayseri', 'Muğla', 'Edirne', 'Malatya', 'Denizli', 'Sivas', 'Ordu'],
+    }];
+
+    const PRAYERS = [
+      { key: 'Fajr', name: 'İmsak', icon: '🌄' },
+      { key: 'Dhuhr', name: 'Öğle', icon: '☀️' },
+      { key: 'Asr', name: 'İkindi', icon: '🌤️' },
+      { key: 'Maghrib', name: 'Akşam', icon: '🌇' },
+      { key: 'Isha', name: 'Yatsı', icon: '🌙' },
+    ];
+
+    const prayerState = { today: null, tomorrow: null, hijri: null, loc: null };
+    const pad = (n) => String(n).padStart(2, '0');
+    const dateParam = (d) => `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+    const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const toMin = (hhmm) => {
+      const [h, m] = hhmm.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    function getCity() { return localStorage.getItem('qz_city') || 'İstanbul'; }
+    function setCity(v) { localStorage.setItem('qz_city', v); }
+    function getCountry() { return localStorage.getItem('qz_country') || 'TR'; }
+    function setCountry(v) { localStorage.setItem('qz_country', v); }
+
+    async function loadCountries() {
+      try {
+        const raw = localStorage.getItem('qz_countries');
+        if (raw) geo.countries = JSON.parse(raw);
+      } catch (_) {}
+      if (!Array.isArray(geo.countries) || !geo.countries.length) {
+        try {
+          const res = await fetchJSON(COUNTRIES_API);
+          geo.countries = res.data || [];
+          try { localStorage.setItem('qz_countries', JSON.stringify(geo.countries)); } catch (_) {}
+        } catch (err) {
+          console.warn('Ülke listesi alınamadı', err);
+          geo.countries = FALLBACK_COUNTRIES;
+        }
+      }
+      geo.byIso = Object.fromEntries(geo.countries.map((c) => [c.iso2, c]));
+    }
+
+    function populateCountries() {
+      const saved = getCountry();
+      const sorted = [...geo.countries].sort((a, b) => a.country.localeCompare(b.country));
+      els.countrySelect.innerHTML =
+        '<option value="loc">📍 Konumum</option>' +
+        sorted.map((c) => `<option value="${c.iso2}">${esc(c.country)}</option>`).join('');
+      els.countrySelect.value =
+        saved === 'loc' || sorted.some((c) => c.iso2 === saved) ? saved : 'TR';
+    }
+
+    function normCity(s) {
+      return String(s)
+        .replace(/[ıİ]/g, 'i')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+    }
+
+    function populateCities() {
+      const iso = els.countrySelect.value;
+      if (iso === 'loc') {
+        els.citySelect.hidden = true;
+        els.cityInput.hidden = true;
+        return;
+      }
+      const cities = [...(geo.byIso?.[iso]?.cities || [])]
+        .sort((a, b) => a.localeCompare(b, 'en'));
+
+      if (!cities.length) {
+        els.citySelect.hidden = true;
+        els.cityInput.hidden = false;
+        els.cityInput.value = getCity();
+        return;
+      }
+
+      els.citySelect.hidden = false;
+      els.cityInput.hidden = true;
+      els.citySelect.innerHTML = cities
+        .map((n) => `<option value="${esc(n)}">${esc(n)}</option>`)
+        .join('');
+
+      const saved = getCity();
+      const exact = cities.includes(saved) ? saved : null;
+      const fuzzy = exact || cities.find((c) => normCity(c) === normCity(saved)) || null;
+      const val = fuzzy || (iso === 'TR' && cities.includes('İstanbul') ? 'İstanbul' : cities[0]);
+      els.citySelect.value = val;
+      if (val !== saved) setCity(val);
+    }
+
+    function aladhanParams() {
+      const iso = getCountry();
+      if (iso === 'loc') return { method: 3 };
+      const country = geo.byIso?.[iso]?.country || 'Turkey';
+      return { country, method: iso === 'TR' ? 13 : 3 };
+    }
+
+    async function fetchTimings(dateStr, lat, lng) {
+      let url;
+      if (lat != null) {
+        url = `${ADHAN_BASE}/timings/${dateStr}?latitude=${lat}&longitude=${lng}&method=3`;
+      } else {
+        const { country, method } = aladhanParams();
+        url = `${ADHAN_BASE}/timingsByCity?city=${encodeURIComponent(getCity())}` +
+          `&country=${encodeURIComponent(country)}&method=${method}&date=${dateStr}`;
+      }
+      const json = await fetchJSON(url);
+      return json.data;
+    }
+
+    function geoLocate() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) return reject(new Error('geo yok'));
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          reject,
+          { timeout: 8000, maximumAge: 600000 }
+        );
+      });
+    }
+
+    function renderHijri(data) {
+      const h = data?.date?.hijri;
+      const g = data?.date?.gregorian;
+      if (!h) { els.hijriLine.textContent = g?.readable || '—'; return; }
+      els.hijriLine.innerHTML =
+        `${esc(h.weekday.en)} · <b>${h.day} ${esc(h.month.en)} ${h.year}</b> H<br>` +
+        `<span>${esc(g?.readable || '')}</span>`;
+    }
+
+    function renderPrayerList() {
+      const t = prayerState.today;
+      if (!t) return;
+      const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+      const next = nextPrayer();
+
+      const rows = PRAYERS.map((p) => {
+        const time = t[p.key];
+        const isNext = next && next.source === 'today' && next.p.key === p.key;
+        return `<li class="${isNext ? 'next' : ''}">
+            <span class="p-name">${p.icon} ${p.name}</span>
+            <span class="p-time">${time}</span>
+          </li>`;
+      });
+      if (t.Sunrise) {
+        rows.splice(1, 0, `<li class="sunrise">
+            <span class="p-name">🌅 Güneş</span>
+            <span class="p-time">${t.Sunrise}</span>
+          </li>`);
+      }
+      els.prayerList.innerHTML = rows.join('');
+    }
+
+    function nextPrayer() {
+      if (!prayerState.today) return null;
+      const now = new Date();
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+      const nowSec = now.getSeconds();
+
+      for (const p of PRAYERS) {
+        const time = prayerState.today[p.key];
+        if (!time) continue;
+        const diff = toMin(time) - nowMin;
+        if (diff >= 0) {
+          const ms = Math.max(diff * 60000 - nowSec * 1000, 0);
+          return { p, time, source: 'today', msLeft: ms };
+        }
+      }
+      // hepsi geçti → yarınki imsak
+      const fajr = prayerState.tomorrow?.Fajr;
+      if (fajr) {
+        const end = new Date(now);
+        end.setDate(end.getDate() + 1);
+        const [h, m] = fajr.split(':').map(Number);
+        end.setHours(h, m, 0, 0);
+        return { p: PRAYERS[0], time: fajr, source: 'tomorrow', msLeft: end - now };
+      }
+      return null;
+    }
+
+    function updateNextPanel() {
+      const n = nextPrayer();
+      if (!n) {
+        els.nextName.textContent = '—';
+        els.nextTime.textContent = '--:--';
+        els.countdown.textContent = '--:--:--';
+        return;
+      }
+      const label = n.source === 'tomorrow' ? 'Yarın' : 'Bugün';
+      els.nextName.innerHTML = `${label} · <b>${n.p.icon} ${n.p.name}</b>`;
+      els.nextTime.textContent = n.time;
+      const s = Math.floor(n.msLeft / 1000);
+      const hh = Math.floor(s / 3600);
+      const mm = Math.floor((s % 3600) / 60);
+      const ss = s % 60;
+      els.countdown.textContent = hh > 0
+        ? `${pad(hh)}:${pad(mm)}:${pad(ss)}`
+        : `${pad(mm)}:${pad(ss)}`;
+    }
+
+    async function loadPrayerTimes(force = false) {
+      const iso = getCountry();
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const cacheKey = `qz_times:${iso}:${iso === 'loc' ? '' : getCity()}:${dayKey(today)}`;
+
+      if (!force) {
+        try {
+          const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+          if (cached?.today && cached?.tomorrow) {
+            Object.assign(prayerState, cached);
+            renderHijri({ date: { hijri: cached.hijri, gregorian: cached.gregorian } });
+            renderPrayerList();
+            updateNextPanel();
+            return;
+          }
+        } catch (_) {}
+      }
+
+      els.prayerList.innerHTML = '<li><span class="p-name">Yükleniyor…</span></li>';
+      try {
+        let lat = null, lng = null;
+        if (iso === 'loc') {
+          const pos = await geoLocate();
+          lat = pos.lat; lng = pos.lng;
+          prayerState.loc = pos;
+        }
+        const [d1, d2] = await Promise.all([
+          fetchTimings(dateParam(today), lat, lng),
+          fetchTimings(dateParam(tomorrow), lat, lng),
+        ]);
+        prayerState.today = d1.timings;
+        prayerState.tomorrow = d2.timings;
+        prayerState.hijri = d1.date.hijri;
+        prayerState.gregorian = d1.date.gregorian;
+
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify({
+            today: prayerState.today,
+            tomorrow: prayerState.tomorrow,
+            hijri: prayerState.hijri,
+            gregorian: prayerState.gregorian,
+          }));
+        } catch (_) {}
+
+        renderHijri(d1);
+        renderPrayerList();
+        updateNextPanel();
+      } catch (err) {
+        console.error(err);
+        if (iso === 'loc') {
+          setCountry('TR');
+          els.countrySelect.value = 'TR';
+          populateCities();
+          return loadPrayerTimes(force);
+        }
+        els.prayerList.innerHTML =
+          '<li><span class="p-name">Vakitler alınamadı — şehri kontrol et</span></li>';
+      }
+    }
+
+    function commitCity() {
+      const v = (els.citySelect.hidden ? els.cityInput.value : els.citySelect.value).trim();
+      if (!v) return;
+      setCity(v);
+      loadPrayerTimes(true);
+      loadWeather(true);
+    }
+
+    els.countrySelect.addEventListener('change', () => {
+      setCountry(els.countrySelect.value);
+      populateCities();
+      loadPrayerTimes(true);
+      loadWeather(true);
+    });
+    els.citySelect.addEventListener('change', commitCity);
+    els.cityInput.addEventListener('change', commitCity);
+    els.cityInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); commitCity(); }
+    });
+
+    /* ================= HAVA DURUMU (goweather.xyz — ücretsiz, keysiz) ================= */
+    const GW = 'https://goweather.xyz/v2/weather';
+
+    const DAY_TR = {
+      Monday: 'Pzt', Tuesday: 'Sal', Wednesday: 'Çar', Thursday: 'Per',
+      Friday: 'Cum', Saturday: 'Cmt', Sunday: 'Paz',
+    };
+
+    function wIcon(desc = '') {
+      const d = String(desc).toLowerCase();
+      if (d.includes('thunder')) return '⛈️';
+      if (d.includes('snow') || d.includes('sleet') || d.includes('ice')) return '❄️';
+      if (d.includes('rain') || d.includes('drizzle') || d.includes('shower')) return '🌧️';
+      if (d.includes('fog') || d.includes('mist') || d.includes('haze')) return '🌫️';
+      if (d.includes('cloud') || d.includes('overcast')) return '☁️';
+      if (d.includes('partly')) return '⛅';
+      if (d.includes('clear') || d.includes('sunny')) return '☀️';
+      return '🌤️';
+    }
+
+    function renderWeather(d) {
+      const fc = (d.forecast || []).map((f) => `
+        <div class="fc-row">
+          <span>${esc(DAY_TR[f.day] || f.day || '')}</span>
+          <span>${wIcon(d.description)}</span>
+          <b>${esc(f.temperature || '')}</b>
+          <span>${esc(f.wind || '')}</span>
+        </div>`).join('');
+      els.weatherBox.innerHTML = `
+        <div class="weather-row">
+          <span class="weather-ico">${wIcon(d.description)}</span>
+          <div>
+            <div class="weather-temp">${esc(d.temperature || '—')}</div>
+            <div class="weather-desc">${esc(d.description || '')}</div>
+          </div>
+        </div>
+        <div class="weather-meta">${esc(d.place || '')}${d.wind ? ` · Rüzgâr ${esc(d.wind)}` : ''}</div>
+        ${fc ? `<div class="forecast">${fc}</div>` : ''}`;
+    }
+
+    async function loadWeather(force = false) {
+      const iso = getCountry();
+      const city = getCity();
+      const cacheKey = `qz_weather:v2:${iso}:${city}`;
+      const now = Date.now();
+
+      if (!force) {
+        try {
+          const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+          if (cached?.d && now - cached.t < 1800000) { renderWeather(cached.d); return; }
+        } catch (_) {}
+      }
+
+      els.weatherBox.innerHTML = '<div class="weather-empty"><div class="spinner"></div></div>';
+      try {
+        let q;
+        let place;
+        if (iso === 'loc') {
+          if (!prayerState.loc) {
+            prayerState.loc = await geoLocate();
+          }
+          q = `${prayerState.loc.lat},${prayerState.loc.lng}`;
+          place = '📍 Konumum';
+        } else {
+          if (!city) throw new Error('şehir boş');
+          q = encodeURIComponent(city);
+          place = city;
+        }
+
+        const w = await fetchJSON(`${GW}/${q}`);
+        if (!w?.temperature && !w?.description) throw new Error('boş yanıt');
+
+        const d = {
+          temperature: w.temperature,
+          wind: w.wind,
+          description: w.description,
+          forecast: Array.isArray(w.forecast) ? w.forecast : [],
+          place,
+        };
+        try { localStorage.setItem(cacheKey, JSON.stringify({ t: now, d })); } catch (_) {}
+        renderWeather(d);
+      } catch (err) {
+        console.error(err);
+        els.weatherBox.innerHTML =
+          '<div class="weather-empty">Hava çekilemedi.<br>' +
+          '<span class="hint">Şehir adını kontrol edip ↻ yenile.</span></div>';
+      }
+    }
+
+    els.weatherRefresh.addEventListener('click', () => loadWeather(true));
+
+    /* ================= SES MOTORU ================= */
+    let sndCtx = null;
+    let playing = false;
+
+    function ensureCtx() {
+      if (!sndCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        sndCtx = new AC();
+      }
+      return sndCtx;
+    }
+    function unlockSound() {
+      const c = ensureCtx();
+      if (c && c.state === 'suspended') c.resume();
+    }
+    document.addEventListener('pointerdown', unlockSound, { once: true });
+    document.addEventListener('keydown', unlockSound, { once: true });
+
+    function tone(c, dest, freq, start, dur, peak = 0.5) {
+      const osc = c.createOscillator();
+      const osc2 = c.createOscillator();
+      const g = c.createGain();
+      const g2 = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      osc2.type = 'triangle';
+      osc2.frequency.value = freq * 2;
+      g2.gain.value = 0.15;
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(peak, start + Math.min(0.12, dur * 0.25));
+      g.gain.setValueAtTime(peak, start + dur * 0.7);
+      g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      osc.connect(g); osc2.connect(g2); g2.connect(g); g.connect(dest);
+      osc.start(start); osc2.start(start);
+      osc.stop(start + dur + 0.05); osc2.stop(start + dur + 0.05);
+    }
+
+    async function playSound(mode) {
+      if (playing) return;
+      const c = ensureCtx();
+      if (!c) return;
+      if (c.state === 'suspended') await c.resume();
+      playing = true;
+      try {
+        const master = c.createGain();
+        master.connect(c.destination);
+        let t = c.currentTime + 0.08;
+
+        if (mode === 'notif') {
+          // kısa bildirim sesi: 3 nota × 2 tur
+          master.gain.value = 0.45;
+          const notes = [880, 1108.7, 1318.5];
+          for (let r = 0; r < 2; r++) {
+            for (const f of notes) {
+              tone(c, master, f, t, 0.18, 0.4);
+              t += 0.2;
+            }
+            t += 0.25;
+          }
+          setTimeout(() => { playing = false; }, 2200);
+        } else {
+          // ezan melodisi (sentez)
+          master.gain.value = 0.22;
+          const call = [[440, 0.5], [494, 0.5], [523, 0.9], [494, 0.4], [440, 1.4]];
+          const tawhid = [[523, 0.4], [587, 0.4], [523, 0.5], [494, 0.5], [440, 0.9], [440, 0.4], [494, 1.5]];
+          const salah = [[587, 0.45], [523, 0.45], [494, 0.6], [440, 1.2]];
+          const felah = [[494, 0.45], [523, 0.45], [587, 0.7], [523, 0.5], [494, 1.4]];
+          const seq = [
+            ...call, [null, 0.6],
+            ...call, [null, 0.9],
+            ...tawhid, [null, 0.7],
+            ...tawhid, [null, 0.9],
+            ...tawhid, [null, 0.7],
+            ...salah, [null, 0.8],
+            ...salah, [null, 0.8],
+            ...felah, [null, 0.7],
+            ...call, [null, 0.5],
+            ...call,
+          ];
+          for (const [freq, dur] of seq) {
+            if (freq) tone(c, master, freq, t, dur);
+            t += dur;
+          }
+          setTimeout(() => { playing = false; }, (t - c.currentTime) * 1000 + 500);
+        }
+      } catch (err) {
+        console.error(err);
+        playing = false;
+      }
+    }
+
+    function soundOn() { return els.soundOn.checked; }
+    function soundMode() { return els.soundMode.value; }
+
+    els.soundOn.checked = localStorage.getItem('qz_sound_on') !== '0';
+    els.soundMode.value = localStorage.getItem('qz_sound_mode') || 'adhan';
+    els.soundOn.addEventListener('change', () => {
+      localStorage.setItem('qz_sound_on', els.soundOn.checked ? '1' : '0');
+    });
+    els.soundMode.addEventListener('change', () => {
+      localStorage.setItem('qz_sound_mode', els.soundMode.value);
+    });
+    els.testSound.addEventListener('click', () => playSound(soundMode()));
+
+    /* ---- vaktinde tetik ---- */
+    function maybeFireAdhan() {
+      if (!soundOn() || !prayerState.today) return;
+      const now = new Date();
+      const hhmm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      const hit = PRAYERS.find((p) => prayerState.today[p.key] === hhmm);
+      if (!hit) return;
+      const firedKey = `qz_fired:${dayKey(now)}:${hit.key}`;
+      if (localStorage.getItem(firedKey)) return;
+      localStorage.setItem(firedKey, '1');
+      playSound(soundMode());
+    }
+
+    /* ---- ana tik (saat + geri sayım + tetik) ---- */
+    function tick() {
+      const now = new Date();
+      els.clock.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      updateNextPanel();
+      maybeFireAdhan();
+    }
+
+    /* ================= PWA: yükle + service worker ================= */
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      els.installBtn.hidden = false;
+    });
+    els.installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      els.installBtn.hidden = true;
+    });
+    window.addEventListener('appinstalled', () => { els.installBtn.hidden = true; });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('SW:', err));
+      });
+    }
+
+    /* ================= BAŞLAT ================= */
+    (async () => {
+      await loadCountries();
+      populateCountries();
+      populateCities();
+      loadPrayerTimes();
+      loadWeather();
+    })();
+    tick();
+    setInterval(tick, 1000);
+    setInterval(() => {
+      const d = new Date();
+      if (d.getHours() === 0 && d.getMinutes() === 0) loadPrayerTimes();
+    }, 60000);
+
+    /* ---------- Tema ---------- */
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.dataset.theme = savedTheme;
+    els.themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    els.themeToggle.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('theme', next);
+      els.themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
+    });
+
+    updateFavUI();
+    loadRandom();
+  </script>
+</body>
+</html>
