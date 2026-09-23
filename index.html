@@ -473,6 +473,7 @@
           <p id="ayahRef" class="ayah-ref"></p>
           <p id="ayahTranslation" class="ayah-translation"></p>
           <audio id="ayahAudio" controls preload="none" hidden></audio>
+          <audio id="adhanAudio" preload="auto" src="./assets/adhan.mp3"></audio>
           <div class="ayah-actions">
             <button id="copyBtn" type="button">📋 Kopyala</button>
             <button id="shareBtn" type="button">📤 Paylaş</button>
@@ -549,6 +550,7 @@
         </label>
         <button id="testSound" class="btn-block" type="button">▶ Test et</button>
         <p class="hint">Ses, sayfada ilk dokunuştan sonra aktifleşir (tarayıcı kuralı).</p>
+        <p class="hint">Ezan sesi: Atcovi — Wikimedia Commons (CC BY-SA 4.0)</p>
       </div>
     </aside>
   </div>
@@ -576,6 +578,7 @@
       ref: document.getElementById('ayahRef'),
       translation: document.getElementById('ayahTranslation'),
       audio: document.getElementById('ayahAudio'),
+      adhanAudio: document.getElementById('adhanAudio'),
       newBtn: document.getElementById('newBtn'),
       copyBtn: document.getElementById('copyBtn'),
       shareBtn: document.getElementById('shareBtn'),
@@ -1313,31 +1316,46 @@
             t += 0.25;
           }
           setTimeout(() => { playing = false; }, 2200);
-        } else {
-          // ezan melodisi (sentez)
-          master.gain.value = 0.22;
-          const call = [[440, 0.5], [494, 0.5], [523, 0.9], [494, 0.4], [440, 1.4]];
-          const tawhid = [[523, 0.4], [587, 0.4], [523, 0.5], [494, 0.5], [440, 0.9], [440, 0.4], [494, 1.5]];
-          const salah = [[587, 0.45], [523, 0.45], [494, 0.6], [440, 1.2]];
-          const felah = [[494, 0.45], [523, 0.45], [587, 0.7], [523, 0.5], [494, 1.4]];
-          const seq = [
-            ...call, [null, 0.6],
-            ...call, [null, 0.9],
-            ...tawhid, [null, 0.7],
-            ...tawhid, [null, 0.9],
-            ...tawhid, [null, 0.7],
-            ...salah, [null, 0.8],
-            ...salah, [null, 0.8],
-            ...felah, [null, 0.7],
-            ...call, [null, 0.5],
-            ...call,
-          ];
-          for (const [freq, dur] of seq) {
-            if (freq) tone(c, master, freq, t, dur);
-            t += dur;
-          }
-          setTimeout(() => { playing = false; }, (t - c.currentTime) * 1000 + 500);
+          return;
         }
+
+        // ezan: gerçek ses kaydı (assets/adhan.mp3)
+        const el = els.adhanAudio;
+        if (el) {
+          try {
+            el.pause();
+            el.currentTime = 0;
+            el.volume = 0.95;
+            el.onended = () => { playing = false; };
+            await el.play();
+            return;
+          } catch (e) {
+            console.warn('Ezan kaydı çalınamadı, sentez geri düşüyor:', e);
+          }
+        }
+        // fallback: sentezlenmiş ezan melodisi
+        master.gain.value = 0.22;
+        const call = [[440, 0.5], [494, 0.5], [523, 0.9], [494, 0.4], [440, 1.4]];
+        const tawhid = [[523, 0.4], [587, 0.4], [523, 0.5], [494, 0.5], [440, 0.9], [440, 0.4], [494, 1.5]];
+        const salah = [[587, 0.45], [523, 0.45], [494, 0.6], [440, 1.2]];
+        const felah = [[494, 0.45], [523, 0.45], [587, 0.7], [523, 0.5], [494, 1.4]];
+        const seq = [
+          ...call, [null, 0.6],
+          ...call, [null, 0.9],
+          ...tawhid, [null, 0.7],
+          ...tawhid, [null, 0.9],
+          ...tawhid, [null, 0.7],
+          ...salah, [null, 0.8],
+          ...salah, [null, 0.8],
+          ...felah, [null, 0.7],
+          ...call, [null, 0.5],
+          ...call,
+        ];
+        for (const [freq, dur] of seq) {
+          if (freq) tone(c, master, freq, t, dur);
+          t += dur;
+        }
+        setTimeout(() => { playing = false; }, (t - c.currentTime) * 1000 + 500);
       } catch (err) {
         console.error(err);
         playing = false;

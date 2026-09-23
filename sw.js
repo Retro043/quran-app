@@ -1,9 +1,10 @@
-const CACHE = 'quran-app-v1';
+const CACHE = 'quran-app-v2';
 const STATIC = [
   './',
   './index.html',
   './manifest.json',
   './privacy.html',
+  './assets/adhan.mp3',
   './assets/icon.svg',
   './assets/icon-192.png',
   './assets/icon-512.png',
