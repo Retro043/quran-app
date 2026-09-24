@@ -1,4 +1,4 @@
-const CACHE = 'quran-app-v5';
+const CACHE = 'quran-app-v6';
 const STATIC = [
   './',
   './index.html',
@@ -51,6 +51,12 @@ self.addEventListener('fetch', (e) => {
   }
 
   // Ağdan gelen (API) istekler: network-first, çevrimdışı fallback cache
+  // sorgulu (güncelleme taraması vb.) istekler: cache'e YAZMA — baypas
+  if (url.search) {
+    e.respondWith(fetch(req));
+    return;
+  }
+
   const isHeavy = /\.(png|jpg|jpeg|svg|mp3|webp|ico)$/i.test(url.pathname);
 
   if (isHeavy) {

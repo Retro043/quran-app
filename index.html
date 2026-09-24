@@ -398,6 +398,16 @@
     .footer-links a { color: var(--muted); text-decoration: none; }
     .footer-links a:hover { color: var(--accent); }
     .footer-links .ver { color: var(--muted); opacity: .7; }
+    .retro-logo {
+      font-weight: 800; font-size: 17px; letter-spacing: 3px;
+      margin-bottom: 6px; user-select: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .retro-logo .plus {
+      color: #f5d365; -webkit-text-fill-color: #f5d365;
+      font-weight: 900;
+    }
 
     /* ---------- Kıble pusulası ---------- */
     .compass {
@@ -664,8 +674,9 @@
   </div>
 
   <footer class="wrap footer-links">
+    <div class="retro-logo" aria-label="Retro+">RΞTRO<span class="plus">+</span></div>
     <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
-    <span class="ver"> · Quran v1.1.1</span>
+    <span class="ver"> · Quran v1.1.2</span>
   </footer>
 
   <script type="module">
@@ -1817,13 +1828,41 @@
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((reg) => {
           const check = () => reg.update().catch(() => {});
-          setInterval(check, 60000);
+          setInterval(check, 30000);
           document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') check();
           });
         }).catch((err) => console.warn('SW:', err));
       });
     }
+
+    /* ---- ANLIK GÜNCELLEME: CDN baypas + içerik farkında hemen yenile ---- */
+    function extractBlocks(html) {
+      const st = (html.match(/<style[^>]*>([\s\S]*?)<\/style>/) || [])[1] || '';
+      const sc = (html.match(/<script type="module">([\s\S]*?)<\/script>/) || [])[1] || '';
+      return st + '\n§\n' + sc;
+    }
+    function liveBlock() {
+      const st = document.querySelector('style');
+      const sc = document.querySelector('script[type="module"]');
+      return (st ? st.textContent : '') + '\n§\n' + (sc ? sc.textContent : '');
+    }
+    let liveBlockCache = liveBlock();
+    async function checkInstantUpdate() {
+      try {
+        const res = await fetch('./index.html?_u=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) return;
+        const html = await res.text();
+        const remote = extractBlocks(html);
+        if (remote && remote !== liveBlockCache) {
+          window.location.href = './?_r=' + Date.now();
+        }
+      } catch (_) {}
+    }
+    setInterval(checkInstantUpdate, 15000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkInstantUpdate();
+    });
 
     /* ================= BAŞLAT ================= */
     (async () => {
