@@ -367,6 +367,13 @@
     .fc-row b { color: var(--text); font-weight: 700; }
     .weather-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px; }
     .weather-head .panel-title { margin-bottom: 0; }
+    .weather-actions { display: flex; gap: 6px; }
+    .weather-picker {
+      display: grid; gap: 8px; margin-top: 10px; padding: 10px;
+      border: 1px dashed var(--card-border); border-radius: 12px;
+      background: rgba(0, 0, 0, .12);
+    }
+    .weather-picker[hidden] { display: none; }
     .mini-refresh {
       border: none; background: transparent; color: var(--muted);
       font-size: 13px; padding: 2px 6px; border-radius: 8px;
@@ -568,10 +575,25 @@
       <div class="panel">
         <div class="weather-head">
           <div class="panel-title"><span>🌤 Hava Durumu</span></div>
-          <button id="weatherRefresh" class="mini-refresh" type="button" title="Yenile">↻</button>
+          <div class="weather-actions">
+            <button id="weatherCityBtn" class="mini-refresh" type="button" title="Ülke / Şehir seç">📍</button>
+            <button id="weatherRefresh" class="mini-refresh" type="button" title="Yenile">↻</button>
+          </div>
         </div>
         <div id="weatherBox" class="weather-box">
           <div class="weather-empty">Yükleniyor…</div>
+        </div>
+        <div id="weatherPicker" class="weather-picker" hidden>
+          <label class="sound-choice">
+            Ülke
+            <select id="weatherCountry"></select>
+          </label>
+          <label class="sound-choice">
+            Şehir
+            <select id="weatherCity"></select>
+            <input id="weatherCityInput" hidden placeholder="Bu ülkede şehir listesi yok — yaz…" autocomplete="off" />
+          </label>
+          <button id="weatherApply" class="btn-block" type="button">✓ Uygula</button>
         </div>
       </div>
 
@@ -608,7 +630,7 @@
             <option value="notif">Bildirim sesi</option>
           </select>
         </label>
-        <button id="testSound" class="btn-block" type="button">▶ Test et</button>
+        <button id="testSound" class="btn-block" type="button">▶ Başlat</button>
         <p class="hint">Ses, sayfada ilk dokunuştan sonra aktifleşir (tarayıcı kuralı).</p>
         <p class="hint">Ezan sesi: Atcovi — Wikimedia Commons (CC BY-SA 4.0)</p>
       </div>
@@ -669,6 +691,12 @@
       testSound: document.getElementById('testSound'),
       weatherBox: document.getElementById('weatherBox'),
       weatherRefresh: document.getElementById('weatherRefresh'),
+      weatherCityBtn: document.getElementById('weatherCityBtn'),
+      weatherPicker: document.getElementById('weatherPicker'),
+      weatherCountry: document.getElementById('weatherCountry'),
+      weatherCity: document.getElementById('weatherCity'),
+      weatherCityInput: document.getElementById('weatherCityInput'),
+      weatherApply: document.getElementById('weatherApply'),
       installBtn: document.getElementById('installBtn'),
       qiblaDial: document.getElementById('qiblaDial'),
       qiblaArrow: document.getElementById('qiblaArrow'),
@@ -1344,6 +1372,61 @@
 
     els.weatherRefresh.addEventListener('click', () => loadWeather(true));
 
+    /* ---- Hava paneli: butonlu ülke/şehir seçici ---- */
+    function populateWeatherCities() {
+      const iso = els.weatherCountry.value;
+      if (iso === 'loc') {
+        els.weatherCity.hidden = true;
+        els.weatherCityInput.hidden = true;
+        return;
+      }
+      const cities = [...(geo.byIso?.[iso]?.cities || [])].sort((a, b) => a.localeCompare(b, 'en'));
+      if (!cities.length) {
+        els.weatherCity.hidden = true;
+        els.weatherCityInput.hidden = false;
+        els.weatherCityInput.value = getCity();
+        return;
+      }
+      els.weatherCity.hidden = false;
+      els.weatherCityInput.hidden = true;
+      els.weatherCity.innerHTML = cities.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join('');
+      const saved = getCity();
+      els.weatherCity.value =
+        (cities.includes(saved) ? saved : null) ||
+        cities.find((c) => normCity(c) === normCity(saved)) ||
+        (iso === 'TR' && cities.includes('İstanbul') ? 'İstanbul' : cities[0]);
+    }
+
+    function populateWeatherPicker() {
+      const saved = getCountry();
+      const sorted = [...geo.countries].sort((a, b) => a.country.localeCompare(b.country));
+      els.weatherCountry.innerHTML =
+        '<option value="loc">📍 Konumum</option>' +
+        sorted.map((c) => `<option value="${c.iso2}">${esc(c.country)}</option>`).join('');
+      els.weatherCountry.value =
+        saved === 'loc' || sorted.some((c) => c.iso2 === saved) ? saved : 'TR';
+      populateWeatherCities();
+    }
+
+    els.weatherCityBtn.addEventListener('click', () => {
+      const opening = els.weatherPicker.hidden;
+      if (opening) populateWeatherPicker();
+      els.weatherPicker.hidden = !opening;
+    });
+    els.weatherCountry.addEventListener('change', populateWeatherCities);
+    els.weatherApply.addEventListener('click', () => {
+      setCountry(els.weatherCountry.value);
+      if (els.weatherCountry.value !== 'loc') {
+        const v = (els.weatherCity.hidden ? els.weatherCityInput.value : els.weatherCity.value).trim();
+        if (v) setCity(v);
+      }
+      els.countrySelect.value = getCountry();
+      populateCities();
+      loadPrayerTimes(true);
+      loadWeather(true);
+      els.weatherPicker.hidden = true;
+    });
+
     /* ================= SES MOTORU ================= */
     let sndCtx = null;
     let playing = false;
@@ -1417,12 +1500,12 @@
             el.currentTime = 0;
             el.volume = 0.95;
             els.testSound.textContent = '⏹ Durdur';
-            el.onended = () => { playing = false; els.testSound.textContent = '▶ Test et'; };
-            el.onerror = () => { playing = false; els.testSound.textContent = '▶ Test et'; };
+            el.onended = () => { playing = false; els.testSound.textContent = '▶ Başlat'; };
+            el.onerror = () => { playing = false; els.testSound.textContent = '▶ Başlat'; };
             await el.play();
             return;
           } catch (e) {
-            els.testSound.textContent = '▶ Test et';
+            els.testSound.textContent = '▶ Başlat';
             console.warn('Ezan kaydı çalınamadı, sentez geri düşüyor:', e);
           }
         }
@@ -1462,7 +1545,7 @@
       const a = els.adhanAudio;
       if (a) { a.pause(); a.currentTime = 0; }
       playing = false;
-      els.testSound.textContent = '▶ Test et';
+      els.testSound.textContent = '▶ Başlat';
     }
 
     els.soundOn.checked = localStorage.getItem('qz_sound_on') !== '0';
