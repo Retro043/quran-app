@@ -433,6 +433,29 @@
     }
     .qibla-readout { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
     .qibla-readout b { display: block; font-size: 20px; color: var(--text); }
+
+    /* ---------- Üst bildirim (toast) ---------- */
+    .toast-wrap {
+      position: fixed; top: 66px; left: 50%; transform: translateX(-50%);
+      z-index: 60; width: min(460px, calc(100% - 24px));
+      display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: color-mix(in srgb, var(--bg) 90%, #000);
+      border: 1px solid var(--accent);
+      color: var(--text); padding: 12px 14px; border-radius: 14px;
+      box-shadow: var(--shadow); font-size: 14px;
+      animation: toastIn .22s ease;
+    }
+    .toast.warm { border-color: var(--accent-2); }
+    .toast button {
+      border: none; background: transparent; color: var(--muted);
+      font-size: 15px; cursor: pointer; padding: 2px 6px;
+    }
+    .toast button:hover { color: var(--text); }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(-10px); } }
   </style>
 </head>
 <body>
@@ -455,6 +478,8 @@
       </nav>
     </div>
   </header>
+
+  <div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
 
   <div class="wrap layout">
     <!-- ============ SOL: VAKİTLER ============ -->
@@ -697,6 +722,7 @@
       weatherCity: document.getElementById('weatherCity'),
       weatherCityInput: document.getElementById('weatherCityInput'),
       weatherApply: document.getElementById('weatherApply'),
+      toastWrap: document.getElementById('toastWrap'),
       installBtn: document.getElementById('installBtn'),
       qiblaDial: document.getElementById('qiblaDial'),
       qiblaArrow: document.getElementById('qiblaArrow'),
@@ -1561,17 +1587,66 @@
       playSound(soundMode());
     });
 
-    /* ---- vaktinde tetik ---- */
-    function maybeFireAdhan() {
-      if (!soundOn() || !prayerState.today) return;
-      const now = new Date();
-      const hhmm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    /* ---- üst bildirim ---- */
+    function toast(msg, warm = false) {
+      const el = document.createElement('div');
+      el.className = 'toast' + (warm ? ' warm' : '');
+      el.innerHTML = `<span>${esc(msg)}</span><button type="button" aria-label="Kapat">✕</button>`;
+      el.querySelector('button').addEventListener('click', () => el.remove());
+      els.toastWrap.appendChild(el);
+      setTimeout(() => el.remove(), 10000);
+      try {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          new Notification(msg);
+        }
+      } catch (_) {}
+    }
+
+    /* ---- dakika geçişleri: açılışta SES YOK; yalnızken açıkken tetiklenir ---- */
+    let lastMinute = null;
+
+    function silentMarkCurrent(hhmm) {
+      if (!prayerState.today) return;
+      const dk = dayKey(new Date());
+      const nowMin = toMin(hhmm);
+      for (const p of PRAYERS) {
+        if (prayerState.today[p.key] === hhmm) {
+          localStorage.setItem(`qz_fired:${dk}:${p.key}`, '1');
+        }
+        const preMin = (toMin(prayerState.today[p.key]) - 10 + 1440) % 1440;
+        if (preMin === nowMin) {
+          localStorage.setItem(`qz_f10:${dk}:${p.key}`, '1');
+        }
+      }
+    }
+
+    function handleMinute(hhmm, now) {
+      if (!prayerState.today) return;
+      const dk = dayKey(now);
+      const nowMin = toMin(hhmm);
+
+      // ezandan 10 dk önce: ayrı bildirim (ses yok)
+      for (const p of PRAYERS) {
+        const t = prayerState.today[p.key];
+        if (!t) continue;
+        const preMin = (toMin(t) - 10 + 1440) % 1440;
+        if (preMin === nowMin) {
+          const k = `qz_f10:${dk}:${p.key}`;
+          if (!localStorage.getItem(k)) {
+            localStorage.setItem(k, '1');
+            toast(`⏰ ${p.name} ezanına 10 dakika kaldı (${t})`, true);
+          }
+        }
+      }
+
+      // tam vaktinde: bildirim + kullanıcının seçtiği ses
       const hit = PRAYERS.find((p) => prayerState.today[p.key] === hhmm);
       if (!hit) return;
-      const firedKey = `qz_fired:${dayKey(now)}:${hit.key}`;
+      const firedKey = `qz_fired:${dk}:${hit.key}`;
       if (localStorage.getItem(firedKey)) return;
       localStorage.setItem(firedKey, '1');
-      playSound(soundMode());
+      toast(`🕌 ${hit.name} ezanı vakti girdi (${hhmm})`);
+      if (soundOn()) playSound(soundMode());
     }
 
     /* ---- ana tik (saat + geri sayım + tetik) ---- */
@@ -1579,7 +1654,15 @@
       const now = new Date();
       els.clock.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
       updateNextPanel();
-      maybeFireAdhan();
+      const hhmm = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      if (lastMinute === null) {
+        // açılış: bu dakikadaki vakitler sessizce işaretlenir — ses/bildirim YOK
+        lastMinute = hhmm;
+        silentMarkCurrent(hhmm);
+      } else if (hhmm !== lastMinute) {
+        lastMinute = hhmm;
+        handleMinute(hhmm, now);
+      }
     }
 
     /* ================= KIBLE PUSULASI ================= */
