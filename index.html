@@ -676,7 +676,7 @@
   <footer class="wrap footer-links">
     <div class="retro-logo" aria-label="Retro+">RΞTRO<span class="plus">+</span></div>
     <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
-    <span class="ver"> · Quran v1.1.2</span>
+    <span class="ver"> · Quran v1.1.3</span>
   </footer>
 
   <script type="module">
@@ -1763,40 +1763,51 @@
     window.addEventListener('deviceorientationabsolute', onOrient, true);
     window.addEventListener('deviceorientation', onOrient, true);
 
-    els.qiblaStart.addEventListener('click', async () => {
+    let geoWatch = null;
+
+    async function startQibla(auto = false) {
       els.qiblaStart.disabled = true;
       try {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
           const p = await DeviceOrientationEvent.requestPermission();
           if (p !== 'granted') {
-            els.qiblaHint.textContent = 'Pusula izni verilmedi';
+            els.qiblaHint.textContent = auto ? 'Pusula izni için butona dokun' : 'Pusula izni verilmedi';
             els.qiblaStart.disabled = false;
             return;
           }
         }
         qib.active = true;
-        navigator.geolocation.getCurrentPosition((pos) => {
+        if (geoWatch != null) { try { navigator.geolocation.clearWatch(geoWatch); } catch (_) {} }
+        const applyPos = (pos) => {
           qib.bearing = calcBearing(pos.coords.latitude, pos.coords.longitude);
           qib.dist = calcDist(pos.coords.latitude, pos.coords.longitude);
           els.qiblaStart.textContent = '↻ Yenile';
           els.qiblaStart.disabled = false;
           renderQibla();
-          setTimeout(() => {
+          if (auto) setTimeout(() => {
             if (!qib.sensor) els.qiblaHint.textContent =
               `Cihazda pusula sensörü yok — kıble açısı: ${Math.round(qib.bearing)}°${qib.dist != null ? ` · ${qib.dist} km` : ''}`;
-          }, 2000);
-        }, (err) => {
-          qib.active = false;
-          els.qiblaHint.textContent = 'Konum izni gerekli';
+          }, 2500);
+        };
+        const onErr = () => {
+          if (auto) {
+            els.qiblaHint.textContent = 'Konum izni için ▶ butona dokun';
+          } else {
+            qib.active = false;
+            els.qiblaHint.textContent = 'Konum izni gerekli';
+          }
           els.qiblaStart.disabled = false;
-        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+        };
+        geoWatch = navigator.geolocation.watchPosition(applyPos, onErr,
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
       } catch (err) {
-        qib.active = false;
-        els.qiblaHint.textContent = 'Pusula desteklenmiyor';
+        if (auto) els.qiblaHint.textContent = 'Pusula izni için butona dokun';
+        else { qib.active = false; els.qiblaHint.textContent = 'Pusula desteklenmiyor'; }
         els.qiblaStart.disabled = false;
       }
-    });
+    }
+    els.qiblaStart.addEventListener('click', () => startQibla(false));
 
     /* ================= PWA: yükle + service worker ================= */
     let deferredPrompt = null;
@@ -1871,6 +1882,8 @@
       populateCities();
       loadPrayerTimes();
       loadWeather();
+      qib.active = true;
+      startQibla(true);
     })();
     tick();
     setInterval(tick, 1000);
