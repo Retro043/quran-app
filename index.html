@@ -798,31 +798,34 @@
         const fresh = els.audio.src !== audio.audio;
         els.audio.hidden = false;
         els.audio.src = audio.audio;
-        if (fresh) {
+        if (fresh && state.autoPlay) {
           stopAdhan();
           els.audio.currentTime = 0;
           els.audio.play().catch(() => {});
         }
+        state.autoPlay = false;
       } else {
         els.audio.hidden = true;
         els.audio.removeAttribute('src');
+        state.autoPlay = false;
       }
       syncFavBtn();
     }
 
-    function applyResult(res) {
+    function applyResult(res, auto = false) {
       state.current = pickItems(res);
+      state.autoPlay = !!auto;
       render();
       showState('view');
     }
 
     /* ---------- Rastgele ---------- */
-    async function loadRandom() {
+    async function loadRandom(auto = false) {
       els.newBtn.disabled = true;
       showState('loading');
       els.loadingText.textContent = 'Rastgele ayet getiriliyor…';
       try {
-        applyResult(await fetchJSON(`${API}/ayah/random/editions/${editionList()}`));
+        applyResult(await fetchJSON(`${API}/ayah/random/editions/${editionList()}`), auto);
       } catch (err) {
         console.error(err);
         showError('Ayet getirilemedi. İnternet bağlantını kontrol edip tekrar dene.');
@@ -832,13 +835,13 @@
     }
 
     /* ---------- Belirli ayet (arama/favori tıklaması) ---------- */
-    async function loadAyah(ref) {
+    async function loadAyah(ref, auto = false) {
       setView('random');
       els.newBtn.disabled = true;
       showState('loading');
       els.loadingText.textContent = `${ref} getiriliyor…`;
       try {
-        applyResult(await fetchJSON(`${API}/ayah/${ref}/editions/${editionList()}`));
+        applyResult(await fetchJSON(`${API}/ayah/${ref}/editions/${editionList()}`), auto);
         document.getElementById('card').scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (err) {
         console.error(err);
@@ -903,7 +906,7 @@
     });
     els.searchResults.addEventListener('click', (e) => {
       const row = e.target.closest('.row[data-ref]');
-      if (row) loadAyah(row.dataset.ref);
+      if (row) loadAyah(row.dataset.ref, true);
     });
 
     /* ---------- Favoriler ---------- */
@@ -964,7 +967,7 @@
         return;
       }
       const row = e.target.closest('.row[data-ref]');
-      if (row) loadAyah(row.dataset.ref);
+      if (row) loadAyah(row.dataset.ref, true);
     });
 
     /* ---------- Kart aksiyonları ---------- */
@@ -990,12 +993,12 @@
       else await navigator.clipboard.writeText(plainText());
     });
 
-    els.newBtn.addEventListener('click', loadRandom);
-    els.translationSelect.addEventListener('change', loadRandom);
+    els.newBtn.addEventListener('click', () => loadRandom(true));
+    els.translationSelect.addEventListener('change', () => loadRandom(true));
     els.audioSelect.addEventListener('change', refreshAudio);
 
     async function refreshAudio() {
-      if (!state.current) { loadRandom(); return; }
+      if (!state.current) { loadRandom(true); return; }
       const { arabic } = state.current;
       const ref = `${arabic.surah.number}:${arabic.numberInSurah}`;
       try {
@@ -1004,6 +1007,7 @@
         const audio = items.find((d) => d.edition.format === 'audio');
         if (audio) {
           state.current.audio = audio;
+          state.autoPlay = true;
           render();
         }
       } catch (err) {
