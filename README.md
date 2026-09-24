@@ -13,6 +13,7 @@ Ayetler, ezan vakitleri, kıble pusulası ve hava durumu — sade, hızlı, rekl
 - 4 kâri seçeneği: Alafasy, Abdul Basit, Husary, Minshawi
 - 🕌 **Ezan vakitleri** — Diyanet (TR) / MWL yöntemi, geri sayım, **vaktinde ses**
   - Gerçek ezan kaydı (durdurulabilir) veya bildirim sesi
+- 🔔 **Vakit bildirimleri** — Web Push (ntfy.sh): uygulama kapalıyken 10 dk uyarı + ezan vakti
 - 🧭 **Kıble bulucu pusula** — canlı yön + Kabe'ye mesafe
 - 🌤 **Hava durumu** — şehir seçimi veya konum (10 günlük tahmin dahil)
 - ☀️🌙 Tema, saat, hijri tarih, PWA (kurulum / çevrimdışı kabuk)
@@ -32,6 +33,7 @@ Ayetler, ezan vakitleri, kıble pusulası ve hava durumu — sade, hızlı, rekl
 | [AlAdhan](https://aladhan.com) | Ezan vakitleri |
 | [Countries Now](https://countriesnow.space) | Ülke/şehir listeleri |
 | [goweather.xyz](https://github.com/robertoduessmann/weather-api) | Hava durumu |
+| [ntfy.sh](https://ntfy.sh) | Web Push bildirimleri |
 
 ## Lisans & atıflar
 

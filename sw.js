@@ -1,4 +1,4 @@
-const CACHE = 'quran-app-v6';
+const CACHE = 'quran-app-v7';
 const STATIC = [
   './',
   './index.html',
@@ -81,4 +81,50 @@ self.addEventListener('fetch', (e) => {
       })
       .catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
   );
+});
+
+/* ---------- Web Push (ntfy.sh) ---------- */
+async function visibleClientExists() {
+  const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  return list.some((c) => c.visibilityState === 'visible' || c.focused);
+}
+
+self.addEventListener('push', (e) => {
+  let data = null;
+  try { data = e.data ? e.data.json() : null; } catch (_) {}
+  e.waitUntil((async () => {
+    let title = 'Quran';
+    let body = '';
+    let tag = '';
+    const isExpiring = data && data.event === 'subscription_expiring';
+    const m = data && data.event === 'message' ? (data.message || null) : data;
+    if (isExpiring) {
+      body = 'Bildirim aboneliğinizin süresi dolmak üzere. Uygulamayı açarak yenileyin.';
+      tag = 'qz_expiring';
+    } else if (m) {
+      title = m.title || title;
+      body = m.message || '';
+      tag = m.id || 'qz_msg';
+    } else {
+      return;
+    }
+    if (!isExpiring && (await visibleClientExists())) return;
+    await self.registration.showNotification(title, {
+      body,
+      tag,
+      icon: './assets/icon-192.png',
+      badge: './assets/icon-192.png',
+    });
+  })());
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil((async () => {
+    const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of list) {
+      if ('focus' in c) return c.focus();
+    }
+    return self.clients.openWindow('./');
+  })());
 });

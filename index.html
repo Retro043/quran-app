@@ -327,6 +327,14 @@
       display: flex; align-items: center; justify-content: space-between; gap: 10px;
       font-size: 13px; padding: 6px 0;
     }
+    .pill-btn {
+      width: 100%; border-radius: 999px; font-size: 13px; font-weight: 600;
+      padding: 10px 14px;
+    }
+    .pill-btn.on {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #06131f; border: none;
+    }
     .sound-choice {
       display: flex; flex-direction: column; gap: 5px;
       font-size: 11px; color: var(--muted);
@@ -670,13 +678,19 @@
         <p class="hint">Ses, sayfada ilk dokunuştan sonra aktifleşir (tarayıcı kuralı).</p>
         <p class="hint">Ezan sesi: Atcovi — Wikimedia Commons (CC BY-SA 4.0)</p>
       </div>
+
+      <div class="panel">
+        <div class="panel-title"><span>🔔 Bildirimler</span></div>
+        <button id="pushBtn" class="pill-btn" type="button">🔔 Bildirimleri Aç</button>
+        <p id="pushHint" class="hint">Kapalı. Açınca izin istenir; uygulama kapalıyken de vakit bildirimi alırsınız (ntfy.sh).</p>
+      </div>
     </aside>
   </div>
 
   <footer class="wrap footer-links">
     <div class="retro-logo" aria-label="Retro+">RΞTRO<span class="plus">+</span></div>
     <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
-    <span class="ver"> · Quran v1.1.4</span>
+    <span class="ver"> · Quran v1.2.0</span>
   </footer>
 
   <script type="module">
@@ -741,6 +755,8 @@
       qiblaDeg: document.getElementById('qiblaDeg'),
       qiblaHint: document.getElementById('qiblaHint'),
       qiblaStart: document.getElementById('qiblaStart'),
+      pushBtn: document.getElementById('pushBtn'),
+      pushHint: document.getElementById('pushHint'),
     };
 
     const state = { current: null, view: 'random' };
@@ -778,6 +794,7 @@
           lastMinute = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
         }
         checkInstantUpdate();
+        schedulePushes().catch(() => {});
       }
     });
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
@@ -1293,6 +1310,7 @@
             renderHijri({ date: { hijri: cached.hijri, gregorian: cached.gregorian } });
             renderPrayerList();
             updateNextPanel();
+            schedulePushes().catch(() => {});
             return;
           }
         } catch (_) {}
@@ -1327,6 +1345,7 @@
         renderHijri(d1);
         renderPrayerList();
         updateNextPanel();
+        schedulePushes().catch(() => {});
         // vakitler açılıştan sonra geldiyse: o dakikanın bildirimini kaçırma (ezan sesi yine yok)
         if (lastMinute != null && !state.timesReady) {
           state.timesReady = true;
@@ -1657,7 +1676,7 @@
       els.toastWrap.appendChild(el);
       setTimeout(() => el.remove(), 10000);
       try {
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        if (!pushActive() && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
           new Notification(msg);
         }
       } catch (_) {}
@@ -1700,6 +1719,259 @@
         }
       }
     }
+
+    /* ================= WEB PUSH (ntfy.sh) ================= */
+    const NTFY_VAPID_KEY = 'BEMjM0sNxh41x0a6Lz3YaqkJ7AUhZefxsOQgw-at69i0fM1CybVBcj7-QQXf4N_tPCgFnOXdRbQ5jrSrr9Yg9Lc';
+    const NTFY_WEBPUSH = 'https://ntfy.sh/v1/webpush';
+    let vapidKeyCache = null;
+
+    function urlB64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const raw = atob(base64);
+      const out = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+      return out;
+    }
+    function uint8ToB64url(buf) {
+      const b = String.fromCharCode(...new Uint8Array(buf));
+      return btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+    async function getVapidKey() {
+      if (vapidKeyCache) return vapidKeyCache;
+      try {
+        const cfg = await fetch('https://ntfy.sh/v1/config', { cache: 'no-store' }).then((r) => r.json());
+        if (cfg.web_push_public_key) vapidKeyCache = cfg.web_push_public_key;
+      } catch (_) {}
+      return vapidKeyCache || NTFY_VAPID_KEY;
+    }
+    function pushTopic() {
+      let t = localStorage.getItem('qz_push_topic');
+      if (!t) {
+        const b = new Uint8Array(8);
+        crypto.getRandomValues(b);
+        t = 'qz_' + [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+        localStorage.setItem('qz_push_topic', t);
+      }
+      return t;
+    }
+    function pushActive() {
+      return localStorage.getItem('qz_push_on') === '1' &&
+        'PushManager' in window &&
+        typeof Notification !== 'undefined' &&
+        Notification.permission === 'granted';
+    }
+    function pushCtx() {
+      return JSON.stringify({
+        c: getCountry(),
+        y: getCity(),
+        t: prayerState.today ? dayKey(new Date()) : '',
+      });
+    }
+    function parseHHMM(v) {
+      const m = String(v || '').match(/(\d{1,2}):(\d{2})/);
+      return m ? (+m[1]) * 60 + (+m[2]) : null;
+    }
+
+    async function ntfySubscribe(sub, key) {
+      const res = await fetch(NTFY_WEBPUSH, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topics: [pushTopic()],
+          endpoint: sub.endpoint,
+          p256dh: sub.toJSON().keys.p256dh,
+          auth: sub.toJSON().keys.auth,
+        }),
+      });
+      if (!res.ok) throw new Error(`ntfy subscribe HTTP ${res.status}`);
+      return res;
+    }
+    async function ntfyUnsubscribe(endpoint) {
+      try {
+        await fetch(NTFY_WEBPUSH, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint }),
+        });
+      } catch (_) {}
+    }
+    async function ntfyDelete(topic, id) {
+      try {
+        await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+      } catch (_) {}
+    }
+
+    async function getPushSub(key, create) {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) return null;
+      let sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        try {
+          const cur = uint8ToB64url(sub.options.applicationServerKey);
+          if (cur && cur !== key) { await sub.unsubscribe(); sub = null; }
+        } catch (_) {}
+      }
+      if (!sub && create) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlB64ToUint8Array(key),
+        });
+      }
+      return sub;
+    }
+
+    async function schedulePushes() {
+      if (!pushActive() || !prayerState.today) return;
+      const topic = pushTopic();
+      const ctx = pushCtx();
+      let sched = {};
+      try { sched = JSON.parse(localStorage.getItem('qz_push_sched') || '{}'); } catch (_) {}
+      if (localStorage.getItem('qz_push_ctx') !== ctx) {
+        await Promise.allSettled(Object.values(sched).map((e) => ntfyDelete(topic, e.id)));
+        sched = {};
+        localStorage.setItem('qz_push_ctx', ctx);
+      }
+      const now = Date.now();
+      const horizon = now + 36 * 3600 * 1000;
+      const minAhead = 15000;
+      for (const k of Object.keys(sched)) {
+        if (!sched[k] || typeof sched[k].at !== 'number' || sched[k].at < now - 3600000) delete sched[k];
+      }
+      const base0 = new Date(); base0.setHours(0, 0, 0, 0);
+      const base1 = new Date(base0); base1.setDate(base1.getDate() + 1);
+      const days = [
+        { key: dayKey(base0), timings: prayerState.today, base: base0 },
+        { key: dayKey(base1), timings: prayerState.tomorrow, base: base1 },
+      ];
+      const wanted = [];
+      for (const d of days) {
+        if (!d.timings) continue;
+        for (const p of PRAYERS) {
+          const pMin = parseHHMM(d.timings[p.key]);
+          if (pMin == null) continue;
+          for (const kind of ['pre', 'at']) {
+            const whenMs = d.base.getTime() + (kind === 'pre' ? pMin - 10 : pMin) * 60000;
+            if (whenMs < now + minAhead || whenMs > horizon) continue;
+            const evKey = `${d.key}|${p.key}|${kind}`;
+            if (sched[evKey] && sched[evKey].at === whenMs) continue;
+            wanted.push({ evKey, whenMs, name: p.name, time: d.timings[p.key], kind });
+          }
+        }
+      }
+      localStorage.setItem('qz_push_sched', JSON.stringify(sched));
+      if (!wanted.length) return;
+      await Promise.allSettled(wanted.map(async (w) => {
+        const old = sched[w.evKey];
+        if (old && old.id) await ntfyDelete(topic, old.id);
+        const title = w.kind === 'pre'
+          ? `⏰ ${w.name} ezanına 10 dakika kaldı (${w.time})`
+          : `🕌 ${w.name} ezanı vakti girdi (${w.time})`;
+        const delay = Math.ceil((w.whenMs - Date.now()) / 1000);
+        const res = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain',
+            'Title': title,
+            'Delay': String(delay),
+            'Tags': 'mosque',
+          },
+          body: getCity(),
+        });
+        if (!res.ok) throw new Error(`ntfy publish HTTP ${res.status}`);
+        const json = await res.json();
+        sched[w.evKey] = { id: json.id, at: w.whenMs };
+        try { localStorage.setItem('qz_push_sched', JSON.stringify(sched)); } catch (_) {}
+      }));
+    }
+
+    async function cancelAllScheduled() {
+      const topic = pushTopic();
+      let sched = {};
+      try { sched = JSON.parse(localStorage.getItem('qz_push_sched') || '{}'); } catch (_) {}
+      await Promise.allSettled(Object.values(sched).map((e) => e && e.id && ntfyDelete(topic, e.id)));
+      try { localStorage.removeItem('qz_push_sched'); localStorage.removeItem('qz_push_ctx'); } catch (_) {}
+    }
+
+    function updatePushUI() {
+      if (!('PushManager' in window) || typeof Notification === 'undefined') {
+        els.pushBtn.disabled = true;
+        els.pushHint.textContent = 'Bu tarayıcı Web Push bildirimlerini desteklemiyor.';
+        return;
+      }
+      const active = pushActive();
+      els.pushBtn.classList.toggle('on', active);
+      els.pushBtn.textContent = active ? '🔕 Bildirimleri Kapat' : '🔔 Bildirimleri Aç';
+      if (Notification.permission === 'denied') {
+        els.pushBtn.disabled = true;
+        els.pushHint.textContent = 'Bildirim izni engellendi — tarayıcı ayarlarından açın.';
+        return;
+      }
+      els.pushBtn.disabled = false;
+      els.pushHint.textContent = active
+        ? 'Açık: uygulama kapalıyken 10 dk uyarı ve ezan vakti bildirimi gelir (ntfy.sh).'
+        : 'Kapalı. Açınca izin istenir; uygulama kapalıyken de vakit bildirimi alırsınız (ntfy.sh).';
+    }
+
+    async function enablePush() {
+      els.pushBtn.disabled = true;
+      try {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') {
+          els.pushHint.textContent = 'Bildirim izni verilmedi.';
+          return;
+        }
+        const key = await getVapidKey();
+        const sub = await getPushSub(key, true);
+        if (!sub) { els.pushHint.textContent = 'Abonelik oluşturulamadı — sayfayı yenileyin.'; return; }
+        await ntfySubscribe(sub, key);
+        localStorage.setItem('qz_push_on', '1');
+        els.pushHint.textContent = 'Açık: uygulama kapalıyken 10 dk uyarı ve ezan vakti bildirimi gelir (ntfy.sh).';
+        toast('🔔 Bildirimler açıldı');
+        await schedulePushes();
+      } catch (err) {
+        console.error('push enable:', err);
+        localStorage.removeItem('qz_push_on');
+        els.pushHint.textContent = 'Bildirim açılamadı — tekrar deneyin.';
+      } finally {
+        updatePushUI();
+      }
+    }
+
+    async function disablePush() {
+      els.pushBtn.disabled = true;
+      try {
+        await cancelAllScheduled();
+        if ('serviceWorker' in navigator) {
+          const reg = await navigator.serviceWorker.getRegistration();
+          const sub = reg ? await reg.pushManager.getSubscription() : null;
+          if (sub) { await ntfyUnsubscribe(sub.endpoint); await sub.unsubscribe(); }
+        }
+      } catch (err) { console.warn('push disable:', err); }
+      localStorage.removeItem('qz_push_on');
+      els.pushHint.textContent = 'Kapalı. Açınca izin istenir; uygulama kapalıyken de vakit bildirimi alırsınız (ntfy.sh).';
+      toast('🔕 Bildirimler kapatıldı');
+      updatePushUI();
+    }
+
+    async function ensurePushSub() {
+      if (!pushActive()) return;
+      try {
+        const key = await getVapidKey();
+        const sub = await getPushSub(key, true);
+        if (!sub) return;
+        await ntfySubscribe(sub, key);
+        await schedulePushes();
+      } catch (err) { console.warn('push re-upsert:', err); }
+    }
+
+    els.pushBtn.addEventListener('click', async () => {
+      if (pushActive()) await disablePush();
+      else await enablePush();
+    });
 
     /* ---- ana tik (saat + geri sayım + tetik) ---- */
     function tick() {
@@ -1853,6 +2125,8 @@
           document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') check();
           });
+          updatePushUI();
+          ensurePushSub().catch(() => {});
         }).catch((err) => console.warn('SW:', err));
       });
     }
@@ -1891,6 +2165,7 @@
       loadWeather();
       qib.active = true;
       startQibla(true);
+      updatePushUI();
     })();
     tick();
     setInterval(tick, 1000);
