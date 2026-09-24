@@ -664,7 +664,7 @@
 
   <footer class="wrap footer-links">
     <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
-    <span class="ver"> · Quran v1.1.0</span>
+    <span class="ver"> · Quran v1.1.1</span>
   </footer>
 
   <script type="module">
@@ -732,6 +732,30 @@
     };
 
     const state = { current: null, view: 'random' };
+    state.silentBoot = true;
+    state.wantPlay = false;
+
+    /* açılışta / öne gelmede HİÇBİR ses otomatik başlamaz */
+    function forceSilence() {
+      try { els.audio.pause(); } catch (_) {}
+      try { els.adhanAudio.pause(); } catch (_) {}
+      playing = false;
+      els.testSound.textContent = '▶ Başlat';
+    }
+    [els.audio, els.adhanAudio].forEach((a) => {
+      if (!a) return;
+      a.addEventListener('play', () => {
+        if (state.silentBoot && !state.wantPlay) {
+          a.pause();
+          console.info('Açılışta otomatik ses engellendi');
+        }
+      });
+    });
+    document.addEventListener('pointerdown', () => { state.silentBoot = false; }, { once: true });
+    window.addEventListener('pageshow', forceSilence);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') forceSilence();
+    });
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -801,6 +825,7 @@
         if (fresh && state.autoPlay) {
           stopAdhan();
           els.audio.currentTime = 0;
+          state.wantPlay = true;
           els.audio.play().catch(() => {});
         }
         state.autoPlay = false;
@@ -1501,6 +1526,7 @@
       if (!c) return;
       if (c.state === 'suspended') await c.resume();
       playing = true;
+      state.wantPlay = true;
       try {
         const master = c.createGain();
         master.connect(c.destination);
