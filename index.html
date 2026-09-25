@@ -2602,7 +2602,7 @@
       if (!sPlay.on || !sData) return;
       const total = (sData.au && sData.au.ayahs && sData.au.ayahs.length) || 0;
       if (sPlay.n === sData.n && sPlay.i + 1 < total) playSurahFrom(sPlay.i + 1);
-      else { sPlay.on = false; updateSurahPlayBtn(); clearPlaying(); }
+      else { sPlay.on = false; sPlay.i = 0; sPlay.n = 0; updateSurahPlayBtn(); clearPlaying(); }
     });
     sAudio.addEventListener('error', () => {
       if (sPlay.on && sAudio.src) { console.warn('surah audio error'); pauseSurah(); }
@@ -2638,11 +2638,11 @@
     const CAL_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
       'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
     const HIJRI_SHORT = {
-      Muharram: 'Muharrem', Safar: 'Safer',
-      "Rabi' al-Awwal": 'Reb. evvel', "Rabi' al-Thani": 'Reb. ahir',
-      'Jumada al-Ula': 'Cem. evvel', 'Jumada al-Akhirah': 'Cem. ahir',
-      Rajab: 'Recep', Shaban: 'Şaban', Ramadan: 'Ramazan', Shawwal: 'Şevval',
-      "Dhu al-Qi'dah": 'Zilkade', 'Dhu al-Hijjah': 'Zilhicce',
+      'Muḥarram': 'Muharrem', 'Ṣafar': 'Safer',
+      'Rabīʿ al-awwal': 'Reb. evvel', 'Rabīʿ al-thānī': 'Reb. ahir',
+      'Jumādá al-ūlá': 'Cem. evvel', 'Jumādá al-ākhirah': 'Cem. ahir',
+      'Rajab': 'Recep', 'Shaʿbān': 'Şaban', 'Ramaḍān': 'Ramazan', 'Shawwāl': 'Şevval',
+      'Dhū al-Qaʿdah': 'Zilkade', 'Dhū al-Ḥijjah': 'Zilhicce',
     };
     let calYM = null;
 
