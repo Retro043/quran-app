@@ -474,33 +474,10 @@
       color: #06131f; border-color: transparent;
     }
 
-    /* ---------- Sûre listesi / okuyucu ---------- */
-    .section-head .list-filter { max-width: 230px; padding: 8px 12px; font-size: 13px; }
-    .surah-row {
-      display: flex; align-items: center; gap: 12px;
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: 14px; padding: 10px 14px;
-      cursor: pointer;
-      transition: border-color .12s ease, transform .12s ease;
-    }
-    .surah-row:hover { border-color: var(--accent); transform: translateY(-1px); }
-    .surah-medal {
-      flex: 0 0 auto; width: 38px; height: 38px;
-      display: grid; place-items: center;
-      border-radius: 12px; font-weight: 800; font-size: 13px;
-      background: linear-gradient(135deg, rgba(61, 220, 151, .18), rgba(110, 168, 254, .16));
-      border: 1px solid var(--card-border);
-      color: var(--accent);
-    }
-    .surah-main { flex: 1; min-width: 0; }
-    .surah-tr { font-weight: 700; font-size: 14px; }
-    .surah-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-    .surah-ar {
-      flex: 0 0 auto;
-      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
-      font-size: 19px; color: var(--accent);
-    }
+    /* ---------- Sûre seçici / okuyucu ---------- */
+    .surah-picker { display: flex; gap: 8px; }
+    .surah-picker select { flex: 1; min-width: 0; }
+    .surah-picker button { flex: 0 0 auto; white-space: nowrap; font-weight: 700; }
     .resume-bar {
       display: flex; align-items: center; justify-content: space-between; gap: 10px;
       padding: 12px 14px; margin-bottom: 14px;
@@ -813,10 +790,10 @@
         <div id="surahListWrap">
           <div class="section-head">
             <h2>Sûreler</h2>
-            <input id="surahFilter" class="list-filter" type="search" placeholder="Sûre ara (ör. Yasin, 36)" autocomplete="off" />
           </div>
-          <div id="surahList" class="list surah-list">
-            <div class="state"><div class="spinner"></div>Sûreler yükleniyor…</div>
+          <div class="surah-picker">
+            <select id="surahSelect" aria-label="Sûre seç"></select>
+            <button id="surahPlayBtn" type="button" title="Seçili sûreyi seslendir">▶ Dinle</button>
           </div>
         </div>
 
@@ -1024,8 +1001,8 @@
       resumeText: document.getElementById('resumeText'),
       resumeBtn: document.getElementById('resumeBtn'),
       surahListWrap: document.getElementById('surahListWrap'),
-      surahList: document.getElementById('surahList'),
-      surahFilter: document.getElementById('surahFilter'),
+      surahSelect: document.getElementById('surahSelect'),
+      surahPlayBtn: document.getElementById('surahPlayBtn'),
       surahReader: document.getElementById('surahReader'),
       readerBack: document.getElementById('readerBack'),
       readerTitle: document.getElementById('readerTitle'),
@@ -1181,7 +1158,6 @@
       els.pageQuran.hidden = name !== 'quran';
       els.pageRandom.hidden = name !== 'random';
       els.pageTools.hidden = name !== 'tools';
-      if (name === 'quran') ensureSurahList();
       if (name === 'tools') {
         const now = new Date();
         loadCalendar(calYM ? calYM.y : now.getFullYear(),
@@ -2414,73 +2390,16 @@
       "Mesed", "İhlâs", "Felak", "Nâs",
     ];
 
-    let sList = null;
-    let sListLoaded = false;
-    let sListLoading = false;
     let sOpen = 0;
     let sData = null;
     const sPlay = { on: false, i: 0, n: 0 };
     const sAudio = els.surahAudio;
 
-    function ensureSurahList() {
-      if (sListLoaded || sListLoading) return;
-      loadSurahList();
-    }
-
-    async function loadSurahList(force = false) {
-      if (sListLoading) return;
-      sListLoading = true;
-      try {
-        if (!force) {
-          try {
-            const cached = JSON.parse(localStorage.getItem('qz_surahlist') || 'null');
-            if (Array.isArray(cached) && cached.length === 114) {
-              sList = cached; sListLoaded = true; renderSurahList(); return;
-            }
-          } catch (_) {}
-        }
-        const res = await fetchJSON(`${API}/surah`);
-        sList = res.data;
-        sListLoaded = true;
-        try {
-          localStorage.setItem('qz_surahlist', JSON.stringify(sList.map((s) => ({
-            number: s.number, name: s.name, englishName: s.englishName,
-            englishNameTranslation: s.englishNameTranslation,
-            numberOfAyahs: s.numberOfAyahs, revelationType: s.revelationType,
-          }))));
-        } catch (_) {}
-        renderSurahList();
-      } catch (err) {
-        console.error(err);
-        els.surahList.innerHTML =
-          '<div class="state error">Sûreler yüklenemedi — internet bağlantısını kontrol edin.</div>' +
-          '<div style="text-align:center"><button id="surahRetry" type="button">Tekrar dene</button></div>';
-        document.getElementById('surahRetry')?.addEventListener('click', () => loadSurahList(true));
-      } finally {
-        sListLoading = false;
-      }
-    }
-
-    function renderSurahList() {
-      if (!sList) return;
-      const q = normCity(els.surahFilter.value);
-      const rows = sList.filter((s) => {
-        if (!q) return true;
-        const tr = SURAHS_TR[s.number - 1] || '';
-        return q === String(s.number) ||
-          normCity(tr).includes(q) ||
-          normCity(s.englishName || '').includes(q) ||
-          normCity(s.englishNameTranslation || '').includes(q);
-      }).map((s) => `
-        <article class="surah-row" data-n="${s.number}">
-          <span class="surah-medal">${s.number}</span>
-          <div class="surah-main">
-            <div class="surah-tr">${esc(SURAHS_TR[s.number - 1] || s.englishName)} Sûresi</div>
-            <div class="surah-sub">${esc(s.englishName || '')} · ${s.numberOfAyahs} âyet · ${s.revelationType === 'Meccan' ? 'Mekkî' : 'Medenî'}</div>
-          </div>
-          <span class="surah-ar" dir="rtl">${esc(s.name)}</span>
-        </article>`).join('');
-      els.surahList.innerHTML = rows || '<div class="state">Eşleşen sûre yok.</div>';
+    function fillSurahSelect() {
+      els.surahSelect.innerHTML = SURAHS_TR.map((t, i) =>
+        `<option value="${i + 1}">${i + 1}. ${esc(t)}</option>`).join('');
+      const last = +(localStorage.getItem('qz_last_surah') || 1);
+      els.surahSelect.value = String(last >= 1 && last <= 114 ? last : 1);
     }
 
     function updateResume() {
@@ -2493,10 +2412,15 @@
       }
     }
 
-    async function openSurah(n) {
+    async function openSurah(n, autoPlay = false) {
       if (!(n >= 1 && n <= 114)) return;
+      els.surahSelect.value = String(n);
       const key = editionList();
-      if (sData && sData.n === n && sData.key === key) { showReader(); return; }
+      if (sData && sData.n === n && sData.key === key) {
+        showReader();
+        if (autoPlay) playSurahFrom(0);
+        return;
+      }
       stopSurah();
       sOpen = n;
       els.surahListWrap.hidden = true;
@@ -2514,12 +2438,13 @@
         sData = { n, ar, tr, au, key };
         try { localStorage.setItem('qz_last_surah', String(n)); } catch (_) {}
         showReader();
+        if (autoPlay) playSurahFrom(0);
       } catch (err) {
         console.error(err);
         els.readerBody.innerHTML =
           '<div class="state error">Sûre yüklenemedi — bağlantı kontrolü yapın.</div>' +
           '<div style="text-align:center"><button id="surahRetry2" type="button">Tekrar dene</button></div>';
-        document.getElementById('surahRetry2')?.addEventListener('click', () => openSurah(n));
+        document.getElementById('surahRetry2')?.addEventListener('click', () => openSurah(n, autoPlay));
       }
     }
 
@@ -2608,11 +2533,8 @@
       if (sPlay.on && sAudio.src) { console.warn('surah audio error'); pauseSurah(); }
     });
 
-    els.surahList.addEventListener('click', (e) => {
-      const row = e.target.closest('.surah-row[data-n]');
-      if (row) openSurah(+row.dataset.n);
-    });
-    els.surahFilter.addEventListener('input', () => { if (sList) renderSurahList(); });
+    els.surahSelect.addEventListener('change', () => openSurah(+els.surahSelect.value));
+    els.surahPlayBtn.addEventListener('click', () => openSurah(+els.surahSelect.value, true));
     els.resumeBtn.addEventListener('click', () => openSurah(+(localStorage.getItem('qz_last_surah') || 1)));
     els.readerBack.addEventListener('click', () => {
       els.surahReader.hidden = true;
@@ -2907,6 +2829,7 @@
     renderDua();
     renderEsma();
     initZakat();
+    fillSurahSelect();
     updateResume();
 
     /* ---- ana tik (saat + geri sayım + tetik) ---- */
@@ -3102,7 +3025,6 @@
       qib.active = true;
       startQibla(true);
       updatePushUI();
-      ensureSurahList();
     })();
     tick();
     setInterval(tick, 1000);

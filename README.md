@@ -8,7 +8,7 @@ Ayetler, ezan vakitleri, kıble pusulası ve hava durumu — sade, hızlı, rekl
 
 ## Özellikler
 
-- 📖 **Sûre okuyucu** — 114 sûre (Türkçe adlarla), Arapça + meal, **âyet âyet sesli dinleme**, kaldığınız yerden devam
+- 📖 **Sûre okuyucu** — açılır menüden 114 sûre seçimi + ▶ dinleme tuşu (Türkçe adlarla), Arapça + meal, **âyet âyet sesli dinleme**, kaldığınız yerden devam
 - 🎲 **Rastgele ayet** — Arapça + Türkçe/İngilizce meal + sesli okuma
 - 🔍 **Kelime araması** ve ★ **Favoriler** (cihazda saklanır)
 - 📅 **Aylık vakit tablosu** — şehir/konumuna göre tam ay, hicri tarihli, çevrimdışı önbellek
