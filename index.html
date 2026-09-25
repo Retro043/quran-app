@@ -682,6 +682,7 @@
       <div class="panel">
         <div class="panel-title"><span>🔔 Bildirimler</span></div>
         <button id="pushBtn" class="pill-btn" type="button">🔔 Bildirimleri Aç</button>
+        <button id="pushTest" class="btn-block" type="button" hidden style="margin-top:8px">🧪 Test bildirimi (15 sn)</button>
         <p id="pushHint" class="hint">Kapalı. Açınca izin istenir; uygulama kapalıyken de vakit bildirimi alırsınız (ntfy.sh).</p>
       </div>
     </aside>
@@ -690,7 +691,7 @@
   <footer class="wrap footer-links">
     <div class="retro-logo" aria-label="Retro+">RΞTRO<span class="plus">+</span></div>
     <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
-    <span class="ver"> · Quran v1.2.0</span>
+    <span class="ver"> · Quran v1.2.1</span>
   </footer>
 
   <script type="module">
@@ -756,6 +757,7 @@
       qiblaHint: document.getElementById('qiblaHint'),
       qiblaStart: document.getElementById('qiblaStart'),
       pushBtn: document.getElementById('pushBtn'),
+      pushTest: document.getElementById('pushTest'),
       pushHint: document.getElementById('pushHint'),
     };
 
@@ -1103,7 +1105,7 @@
       { key: 'Isha', name: 'Yatsı', icon: '🌙' },
     ];
 
-    const prayerState = { today: null, tomorrow: null, hijri: null, loc: null };
+    const prayerState = { today: null, tomorrow: null, day2: null, hijri: null, loc: null };
     const pad = (n) => String(n).padStart(2, '0');
     const dateParam = (d) => `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
     const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -1300,12 +1302,14 @@
       const today = new Date();
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
+      const day2 = new Date(today);
+      day2.setDate(day2.getDate() + 2);
       const cacheKey = `qz_times:${iso}:${iso === 'loc' ? '' : getCity()}:${dayKey(today)}`;
 
       if (!force) {
         try {
           const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-          if (cached?.today && cached?.tomorrow) {
+          if (cached?.today && cached?.tomorrow && 'day2' in cached) {
             Object.assign(prayerState, cached);
             renderHijri({ date: { hijri: cached.hijri, gregorian: cached.gregorian } });
             renderPrayerList();
@@ -1328,8 +1332,11 @@
           fetchTimings(dateParam(today), lat, lng),
           fetchTimings(dateParam(tomorrow), lat, lng),
         ]);
+        let d3 = null;
+        try { d3 = await fetchTimings(dateParam(day2), lat, lng); } catch (_) {}
         prayerState.today = d1.timings;
         prayerState.tomorrow = d2.timings;
+        prayerState.day2 = d3?.timings || null;
         prayerState.hijri = d1.date.hijri;
         prayerState.gregorian = d1.date.gregorian;
 
@@ -1337,6 +1344,7 @@
           localStorage.setItem(cacheKey, JSON.stringify({
             today: prayerState.today,
             tomorrow: prayerState.tomorrow,
+            day2: prayerState.day2,
             hijri: prayerState.hijri,
             gregorian: prayerState.gregorian,
           }));
@@ -1737,6 +1745,13 @@
       const b = String.fromCharCode(...new Uint8Array(buf));
       return btoa(b).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     }
+    /* fetch header'ları yalnızca ISO-8859-1 kabul eder → başlığı RFC 2047 ile kodla (ntfy çözer) */
+    function rfc2047(s) {
+      const bytes = new TextEncoder().encode(s);
+      let bin = '';
+      bytes.forEach((b) => { bin += String.fromCharCode(b); });
+      return '=?UTF-8?B?' + btoa(bin) + '?=';
+    }
     async function getVapidKey() {
       if (vapidKeyCache) return vapidKeyCache;
       try {
@@ -1824,28 +1839,36 @@
       return sub;
     }
 
-    async function schedulePushes() {
+    let schedChain = Promise.resolve();
+    function schedulePushes() {
+      schedChain = schedChain.catch(() => {}).then(() => runSchedule());
+      return schedChain;
+    }
+
+    async function runSchedule() {
       if (!pushActive() || !prayerState.today) return;
       const topic = pushTopic();
       const ctx = pushCtx();
       let sched = {};
       try { sched = JSON.parse(localStorage.getItem('qz_push_sched') || '{}'); } catch (_) {}
       if (localStorage.getItem('qz_push_ctx') !== ctx) {
-        await Promise.allSettled(Object.values(sched).map((e) => ntfyDelete(topic, e.id)));
+        await Promise.allSettled(Object.values(sched).map((e) => e && e.id && ntfyDelete(topic, e.id)));
         sched = {};
         localStorage.setItem('qz_push_ctx', ctx);
       }
       const now = Date.now();
-      const horizon = now + 36 * 3600 * 1000;
+      const horizon = now + 70 * 3600 * 1000;
       const minAhead = 15000;
       for (const k of Object.keys(sched)) {
         if (!sched[k] || typeof sched[k].at !== 'number' || sched[k].at < now - 3600000) delete sched[k];
       }
       const base0 = new Date(); base0.setHours(0, 0, 0, 0);
       const base1 = new Date(base0); base1.setDate(base1.getDate() + 1);
+      const base2 = new Date(base0); base2.setDate(base2.getDate() + 2);
       const days = [
         { key: dayKey(base0), timings: prayerState.today, base: base0 },
         { key: dayKey(base1), timings: prayerState.tomorrow, base: base1 },
+        { key: dayKey(base2), timings: prayerState.day2, base: base2 },
       ];
       const wanted = [];
       for (const d of days) {
@@ -1870,12 +1893,12 @@
         const title = w.kind === 'pre'
           ? `⏰ ${w.name} ezanına 10 dakika kaldı (${w.time})`
           : `🕌 ${w.name} ezanı vakti girdi (${w.time})`;
-        const delay = Math.ceil((w.whenMs - Date.now()) / 1000);
+        const delay = Math.ceil(w.whenMs / 1000);
         const res = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'text/plain',
-            'Title': title,
+            'Title': rfc2047(title),
             'Delay': String(delay),
             'Tags': 'mosque',
           },
@@ -1887,7 +1910,6 @@
         try { localStorage.setItem('qz_push_sched', JSON.stringify(sched)); } catch (_) {}
       }));
     }
-
     async function cancelAllScheduled() {
       const topic = pushTopic();
       let sched = {};
@@ -1905,6 +1927,7 @@
       const active = pushActive();
       els.pushBtn.classList.toggle('on', active);
       els.pushBtn.textContent = active ? '🔕 Bildirimleri Kapat' : '🔔 Bildirimleri Aç';
+      els.pushTest.hidden = !active;
       if (Notification.permission === 'denied') {
         els.pushBtn.disabled = true;
         els.pushHint.textContent = 'Bildirim izni engellendi — tarayıcı ayarlarından açın.';
@@ -1971,6 +1994,30 @@
     els.pushBtn.addEventListener('click', async () => {
       if (pushActive()) await disablePush();
       else await enablePush();
+    });
+
+    els.pushTest.addEventListener('click', async () => {
+      if (!pushActive()) return;
+      els.pushTest.disabled = true;
+      try {
+        const res = await fetch(`https://ntfy.sh/${encodeURIComponent(pushTopic())}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain',
+            'Title': rfc2047('🧪 Test: Quran bildirimi'),
+            'Delay': String(Math.ceil(Date.now() / 1000) + 15),
+            'Tags': 'tada',
+          },
+          body: 'Bu bildirim uygulama kapalıyken geldi — sistem çalışıyor.',
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        toast('🧪 Test yollandı — şimdi UYGULAMAYI KAPAT; 15 sn içinde bildirim gelmeli', true);
+      } catch (err) {
+        console.error('push test:', err);
+        toast('Test gönderilemedi — tekrar deneyin', true);
+      } finally {
+        setTimeout(() => { els.pushTest.disabled = false; }, 2000);
+      }
     });
 
     /* ---- ana tik (saat + geri sayım + tetik) ---- */
@@ -2169,6 +2216,7 @@
     })();
     tick();
     setInterval(tick, 1000);
+    setInterval(() => schedulePushes().catch(() => {}), 300000);
     setInterval(() => {
       const d = new Date();
       if (d.getHours() === 0 && d.getMinutes() === 0) loadPrayerTimes();
