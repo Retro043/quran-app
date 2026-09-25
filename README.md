@@ -8,8 +8,14 @@ Ayetler, ezan vakitleri, kıble pusulası ve hava durumu — sade, hızlı, rekl
 
 ## Özellikler
 
+- 📖 **Sûre okuyucu** — 114 sûre (Türkçe adlarla), Arapça + meal, **âyet âyet sesli dinleme**, kaldığınız yerden devam
 - 🎲 **Rastgele ayet** — Arapça + Türkçe/İngilizce meal + sesli okuma
 - 🔍 **Kelime araması** ve ★ **Favoriler** (cihazda saklanır)
+- 📅 **Aylık vakit tablosu** — şehir/konumuna göre tam ay, hicri tarihli, çevrimdışı önbellek
+- 📿 **Tesbih** — 6 zikir seçeneği, sayaç + titreşim, hedefte kutlama
+- 🤲 **Dualar** — ayet-i kerime ve günlük dualar (Türkçe meal + meal)
+- ☪ **Esmaül Hüsna** — 99 isim (Tirmizî listesi), aramalı
+- 💰 **Zekât hesaplayıcı** — 85 g altın nisâbı, %2,5
 - 4 kâri seçeneği: Alafasy, Abdul Basit, Husary, Minshawi
 - 🕌 **Ezan vakitleri** — Diyanet (TR) / MWL yöntemi, geri sayım, **vaktinde ses**
   - Gerçek ezan kaydı (durdurulabilir) veya bildirim sesi
@@ -21,7 +27,7 @@ Ayetler, ezan vakitleri, kıble pusulası ve hava durumu — sade, hızlı, rekl
 
 ## Teknik
 
-- Tek sayfa: `index.html` (vanilla JS, framework yok)
+- Tek dosya: `index.html` (vanilla JS, framework yok) — **3 sayfalı arayüz** (Kur'an · Rastgele · Araçlar)
 - PWA: `manifest.json`, `sw.js` (kabuk: ağ-öncelikli → güncel sürüm her açılışta gelir; çevrimdışı yedek cache)
 - Yerel sunucu: `npm start` → `http://localhost:5176` (PWA için http origin gerekir)
 

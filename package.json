@@ -1,9 +1,9 @@
 {
   "name": "quran-app",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
-  "description": "Quran (القرآن) — ayetler, ezan vakitleri, hava durumu (PWA)",
+  "description": "Quran (القرآن) — sureler, ezan vakitleri, tesbih, dualar (PWA)",
   "scripts": {
     "start": "node server.js"
   }
