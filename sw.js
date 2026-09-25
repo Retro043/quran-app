@@ -50,10 +50,11 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Ağdan gelen (API) istekler: network-first, çevrimdışı fallback cache
-  // sorgulu (güncelleme taraması vb.) istekler: cache'e YAZMA — baypas
+  // sorgulu (güncelleme taraması vb.) istekler: cache'e YAZMA — baypas, çevrimdışıysa cache'ten oku
   if (url.search) {
-    e.respondWith(fetch(req));
+    e.respondWith(
+      fetch(req).catch(() => caches.match(req).then((hit) => hit || caches.match('./index.html')))
+    );
     return;
   }
 

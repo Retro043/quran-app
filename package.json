@@ -1,6 +1,6 @@
 {
   "name": "quran-app",
-  "version": "1.0.0",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
   "description": "Quran (القرآن) — ayetler, ezan vakitleri, hava durumu (PWA)",

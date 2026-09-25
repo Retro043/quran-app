@@ -342,6 +342,7 @@
     }
     .sound-choice select { width: 100%; padding: 8px 10px; font-size: 13px; }
     .btn-block { width: 100%; font-size: 13px; font-weight: 600; }
+    #pushTest { margin-top: 8px; }
     .hint { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 10px 0 0; }
     .panel .state { padding: 20px 10px; font-size: 13px; }
 
@@ -682,7 +683,7 @@
       <div class="panel">
         <div class="panel-title"><span>🔔 Bildirimler</span></div>
         <button id="pushBtn" class="pill-btn" type="button">🔔 Bildirimleri Aç</button>
-        <button id="pushTest" class="btn-block" type="button" hidden style="margin-top:8px">🧪 Test bildirimi (15 sn)</button>
+        <button id="pushTest" class="btn-block" type="button" hidden>🧪 Test bildirimi (15 sn)</button>
         <p id="pushHint" class="hint">Kapalı. Açınca izin istenir; uygulama kapalıyken de vakit bildirimi alırsınız (ntfy.sh).</p>
       </div>
     </aside>
@@ -796,6 +797,7 @@
           lastMinute = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
         }
         checkInstantUpdate();
+        ensurePushSub().catch(() => {});
         schedulePushes().catch(() => {});
       }
     });
@@ -1109,10 +1111,6 @@
     const pad = (n) => String(n).padStart(2, '0');
     const dateParam = (d) => `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
     const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    const toMin = (hhmm) => {
-      const [h, m] = hhmm.split(':').map(Number);
-      return h * 60 + m;
-    };
 
     function getCity() { return localStorage.getItem('qz_city') || 'İstanbul'; }
     function setCity(v) { localStorage.setItem('qz_city', v); }
@@ -1230,7 +1228,6 @@
     function renderPrayerList() {
       const t = prayerState.today;
       if (!t) return;
-      const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
       const next = nextPrayer();
 
       const rows = PRAYERS.map((p) => {
@@ -1238,13 +1235,13 @@
         const isNext = next && next.source === 'today' && next.p.key === p.key;
         return `<li class="${isNext ? 'next' : ''}">
             <span class="p-name">${p.icon} ${p.name}</span>
-            <span class="p-time">${time}</span>
+            <span class="p-time">${esc(time)}</span>
           </li>`;
       });
       if (t.Sunrise) {
         rows.splice(1, 0, `<li class="sunrise">
             <span class="p-name">🌅 Güneş</span>
-            <span class="p-time">${t.Sunrise}</span>
+            <span class="p-time">${esc(t.Sunrise)}</span>
           </li>`);
       }
       els.prayerList.innerHTML = rows.join('');
@@ -1259,7 +1256,9 @@
       for (const p of PRAYERS) {
         const time = prayerState.today[p.key];
         if (!time) continue;
-        const diff = toMin(time) - nowMin;
+        const pMin = parseHHMM(time);
+        if (pMin == null) continue;
+        const diff = pMin - nowMin;
         if (diff >= 0) {
           const ms = Math.max(diff * 60000 - nowSec * 1000, 0);
           return { p, time, source: 'today', msLeft: ms };
@@ -1267,11 +1266,11 @@
       }
       // hepsi geçti → yarınki imsak
       const fajr = prayerState.tomorrow?.Fajr;
-      if (fajr) {
+      const fMin = parseHHMM(fajr);
+      if (fMin != null) {
         const end = new Date(now);
         end.setDate(end.getDate() + 1);
-        const [h, m] = fajr.split(':').map(Number);
-        end.setHours(h, m, 0, 0);
+        end.setHours(Math.floor(fMin / 60), fMin % 60, 0, 0);
         return { p: PRAYERS[0], time: fajr, source: 'tomorrow', msLeft: end - now };
       }
       return null;
@@ -1698,12 +1697,13 @@
       const preSound = opts.preSound !== false;    // 10-dk bildirim sesi
       if (!prayerState.today) return;
       const dk = dayKey(now);
-      const nowMin = toMin(hhmm);
+      const nowMin = parseHHMM(hhmm);
 
       for (const p of PRAYERS) {
         const t = prayerState.today[p.key];
         if (!t) continue;
-        const pMin = toMin(t);
+        const pMin = parseHHMM(t);
+        if (pMin == null) continue;
 
         // ezandan 10 dk önce: bildirim + JINGLE sesi
         const pre = (pMin - 10 + 1440) % 1440;
@@ -1901,6 +1901,7 @@
             'Title': rfc2047(title),
             'Delay': String(delay),
             'Tags': 'mosque',
+            'Priority': '4',
           },
           body: getCity(),
         });
@@ -1952,6 +1953,7 @@
         if (!sub) { els.pushHint.textContent = 'Abonelik oluşturulamadı — sayfayı yenileyin.'; return; }
         await ntfySubscribe(sub, key);
         localStorage.setItem('qz_push_on', '1');
+        localStorage.setItem('qz_push_upsert', String(Date.now()));
         els.pushHint.textContent = 'Açık: uygulama kapalıyken 10 dk uyarı ve ezan vakti bildirimi gelir (ntfy.sh).';
         toast('🔔 Bildirimler açıldı');
         await schedulePushes();
@@ -1975,18 +1977,23 @@
         }
       } catch (err) { console.warn('push disable:', err); }
       localStorage.removeItem('qz_push_on');
+      localStorage.removeItem('qz_push_upsert');
       els.pushHint.textContent = 'Kapalı. Açınca izin istenir; uygulama kapalıyken de vakit bildirimi alırsınız (ntfy.sh).';
       toast('🔕 Bildirimler kapatıldı');
       updatePushUI();
     }
 
+    /* aboneliği en az 12 saatte bir yenile (ntfy abonelik sonu ~55 gün) */
     async function ensurePushSub() {
       if (!pushActive()) return;
       try {
+        const last = +(localStorage.getItem('qz_push_upsert') || 0);
+        if (Date.now() - last < 12 * 3600 * 1000) return;
         const key = await getVapidKey();
         const sub = await getPushSub(key, true);
         if (!sub) return;
         await ntfySubscribe(sub, key);
+        localStorage.setItem('qz_push_upsert', String(Date.now()));
         await schedulePushes();
       } catch (err) { console.warn('push re-upsert:', err); }
     }
@@ -2007,11 +2014,14 @@
             'Title': rfc2047('🧪 Test: Quran bildirimi'),
             'Delay': String(Math.ceil(Date.now() / 1000) + 15),
             'Tags': 'tada',
+            'Priority': '4',
           },
           body: 'Bu bildirim uygulama kapalıyken geldi — sistem çalışıyor.',
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        els.pushHint.textContent = '🧪 Test yollandı — uygulamayı KAPATIN, ~15 sn içinde bildirim gelmeli.';
         toast('🧪 Test yollandı — şimdi UYGULAMAYI KAPAT; 15 sn içinde bildirim gelmeli', true);
+        setTimeout(() => updatePushUI(), 20000);
       } catch (err) {
         console.error('push test:', err);
         toast('Test gönderilemedi — tekrar deneyin', true);
