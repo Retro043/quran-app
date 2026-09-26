@@ -10,7 +10,7 @@ Ayetler, ezan vakitleri, kıble pusulası ve hava durumu — sade, hızlı, rekl
 
 - 🏠 **Ana ekran** — kaldığınız yerden devam kartı, sıradaki namaz geri sayımı, günün ayeti (↻ Rastgele)
 - 📖 **Sûre okuyucu** — açılır menüden 114 sûre seçimi + ▶ dinleme tuşu (Türkçe adlarla), Arapça + meal, **âyet âyet sesli dinleme**, kaldığınız yerden devam
-- **Rastgele ayet** — Arapça + Türkçe/İngilizce meal + sesli okuma (zarsız, ana sayfadan)
+- **Rastgele ayet** — Arapça + Türkçe/İngilizce meal + sesli okuma (ana sayfadan)
 - 🔍 **Kelime araması** ve ★ **Favoriler** (cihazda saklanır)
 - 📅 **Aylık vakit tablosu** — şehir/konumuna göre tam ay, hicri tarihli, çevrimdışı önbellek
 - 📿 **Tesbih** — 6 zikir seçeneği, sayaç + titreşim, hedefte kutlama
