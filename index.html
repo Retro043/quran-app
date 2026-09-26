@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0a1417" />
+  <meta name="theme-color" content="#0a1f1a" />
   <meta name="description" content="Quran (القرآن) — sûre okuma, ayetler, ezan vakitleri, kıble, hava durumu, tesbih, dualar" />
   <title>Quran (القرآن)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,14 +18,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <style>
     :root {
-      --bg: #0a1417;
-      --bg-veil: rgba(10, 20, 23, 0.82);
+      --bg: #0a1f1a;
+      --bg-veil: rgba(10, 31, 26, 0.86);
       --card: rgba(255, 255, 255, 0.055);
       --card-border: rgba(255, 255, 255, 0.10);
       --text: #e9f2ee;
       --muted: #8fa5a0;
       --accent: #34d399;
       --accent-2: #efbd5c;
+      --gold-soft: linear-gradient(135deg, #f6e2ae, #e3bd72);
       --radius: 20px;
       --shadow: 0 10px 30px rgba(0, 0, 0, .38);
       --font-ui: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
@@ -60,6 +61,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      padding-bottom: 76px;
     }
 
     .wrap { width: min(1240px, 100% - 32px); margin: 0 auto; }
@@ -86,36 +88,32 @@
       background: var(--card); border: 1px solid var(--card-border);
     }
 
-    /* ---------- Geçiş çubuğu (tab bar) ---------- */
-    .tabbar {
-      display: flex; gap: 6px;
-      padding: 0 0 12px;
-      overflow-x: auto;
-      scrollbar-width: none;
+    /* ---------- Alt gezinme (bottom nav) ---------- */
+    .bottomnav {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+      display: flex; justify-content: space-around; gap: 2px;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+      background: color-mix(in srgb, var(--bg) 90%, transparent);
+      backdrop-filter: blur(14px);
+      border-top: 1px solid var(--card-border);
     }
-    .tabbar::-webkit-scrollbar { display: none; }
-    .tab-btn {
-      flex: 0 0 auto;
-      display: flex; align-items: center; gap: 7px;
-      padding: 9px 16px; min-height: 40px;
-      border-radius: 999px;
+    .nav-btn {
+      flex: 1; max-width: 108px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 6px 2px; min-height: 52px;
+      border: none; background: transparent; border-radius: 14px;
       font-family: var(--font-ui);
-      font-size: 14px; font-weight: 600;
-      background: transparent;
-      border: 1px solid var(--card-border);
+      font-size: 11px; font-weight: 600;
       color: var(--muted);
     }
-    .tab-btn:hover { color: var(--text); border-color: var(--accent-2); }
-    .tab-btn.active {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #06131f; border-color: transparent;
-    }
-    .tab-btn .badge {
+    .nav-btn .n-ico { font-size: 19px; line-height: 1; }
+    .nav-btn:hover { color: var(--text); }
+    .nav-btn.active { color: var(--accent-2); background: rgba(239, 189, 92, .10); }
+    .badge {
       font-size: 11px; font-weight: 700;
       background: rgba(0, 0, 0, .25);
       border-radius: 999px; padding: 1px 7px;
     }
-    .tab-btn.active .badge { background: rgba(6, 19, 31, .20); }
 
     /* ---------- Butonlar / alanlar ---------- */
     button, select, input {
@@ -128,8 +126,8 @@
     button:hover, select:hover, input:hover { border-color: var(--accent); }
     button:active { transform: scale(.97); }
     button.primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #06131f; border: none; font-weight: 700;
+      background: var(--gold-soft);
+      color: #14261e; border: none; font-weight: 700;
     }
     button.ghost { background: transparent; }
     button:disabled { opacity: .55; cursor: wait; }
@@ -270,26 +268,14 @@
     }
     .count { font-size: 13px; color: var(--muted); }
 
-    /* ---------- Yerleşim: sol/sağ paneller ---------- */
+    /* ---------- Yerleşim ---------- */
     .layout {
-      display: grid;
-      grid-template-columns: 1fr;
-      grid-template-areas: "next" "center" "times";
-      gap: 16px;
+      display: block;
       padding: 22px 0 40px;
-      align-items: start;
     }
-    .center { grid-area: center; min-width: 0; }
-    .side-left { grid-area: times; }
-    .side-right { grid-area: next; }
-    .side { display: flex; flex-direction: column; gap: 14px; }
-    @media (min-width: 1100px) {
-      .layout {
-        grid-template-columns: 236px minmax(0, 1fr) 236px;
-        grid-template-areas: "times center next";
-      }
-      .side { position: sticky; top: 118px; }
-    }
+    .center { max-width: 880px; margin: 0 auto; min-width: 0; }
+    .page { display: flex; flex-direction: column; gap: 16px; }
+    .page[hidden] { display: none; }
 
     .panel {
       background: var(--card);
@@ -321,11 +307,12 @@
     .prayer-list li .p-name { display: flex; align-items: center; gap: 8px; color: var(--muted); }
     .prayer-list li .p-time { font-variant-numeric: tabular-nums; font-weight: 700; }
     .prayer-list li.next {
-      background: linear-gradient(135deg, rgba(52, 211, 153, .16), rgba(239, 189, 92, .14));
-      border-color: rgba(52, 211, 153, .45);
+      background: var(--gold-soft);
+      border-color: transparent;
+      box-shadow: 0 4px 14px rgba(239, 189, 92, .18);
     }
     .prayer-list li.next .p-name,
-    .prayer-list li.next .p-time { color: var(--text); }
+    .prayer-list li.next .p-time { color: #14261e; }
     .prayer-list li.sunrise .p-name,
     .prayer-list li.sunrise .p-time { opacity: .65; font-weight: 400; }
 
@@ -349,8 +336,8 @@
       padding: 10px 14px;
     }
     .pill-btn.on {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #06131f; border: none;
+      background: var(--gold-soft);
+      color: #14261e; border: none;
     }
     .sound-choice {
       display: flex; flex-direction: column; gap: 5px;
@@ -464,7 +451,7 @@
     .compass-center {
       position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
       width: 34px; height: 34px; border-radius: 50%;
-      background: rgba(10, 20, 23, .75); border: 1px solid var(--card-border);
+      background: rgba(10, 31, 26, .75); border: 1px solid var(--card-border);
       display: grid; place-items: center; font-size: 17px; z-index: 2;
     }
     .qibla-readout { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
@@ -524,9 +511,15 @@
       direction: rtl; text-align: center;
       font-family: var(--font-ar);
       font-size: clamp(20px, 4.5vw, 26px);
-      color: var(--accent);
-      padding: 16px 16px 8px;
-      border-bottom: 1px dashed var(--card-border);
+      color: var(--accent-2);
+      margin: 14px 14px 4px;
+      padding: 18px 16px;
+      border: 1px solid rgba(239, 189, 92, .45);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(239, 189, 92, .12), transparent 70%),
+        var(--card);
+      box-shadow: inset 0 0 0 4px rgba(239, 189, 92, .06);
     }
     .ayah-row {
       padding: 14px 16px;
@@ -547,9 +540,9 @@
     .ayah-num {
       display: inline-grid; place-items: center;
       width: 26px; height: 26px; border-radius: 50%;
-      background: rgba(52, 211, 153, .15);
-      border: 1px solid rgba(52, 211, 153, .40);
-      color: var(--accent); font-weight: 700; font-size: 12px;
+      background: rgba(239, 189, 92, .14);
+      border: 1px solid rgba(239, 189, 92, .45);
+      color: var(--accent-2); font-weight: 700; font-size: 12px;
     }
     .ayah-ar {
       direction: rtl; text-align: right;
@@ -575,8 +568,8 @@
       color: var(--muted);
     }
     .tchip.active {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      color: #06131f; border-color: transparent;
+      background: var(--gold-soft);
+      color: #14261e; border-color: transparent;
     }
     .tasbih-ar {
       direction: rtl; text-align: center;
@@ -685,6 +678,78 @@
     }
     .zakat-res[hidden] { display: none; }
 
+    /* ---------- Ana sayfa ---------- */
+    .home-hero {
+      position: relative; overflow: hidden;
+      border-radius: var(--radius);
+      border: 1px solid var(--card-border);
+      padding: 26px 20px;
+      background:
+        linear-gradient(165deg, rgba(10, 31, 26, .35), rgba(10, 31, 26, .88)),
+        url('./assets/kaaba.jpg') center / cover no-repeat;
+      box-shadow: var(--shadow);
+    }
+    .hero-tag {
+      margin: 0; font-family: var(--font-ui);
+      font-size: clamp(20px, 4vw, 26px); font-weight: 800; letter-spacing: -.01em;
+    }
+    .hero-sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .hero-actions .primary { padding: 11px 20px; border-radius: 999px; }
+    .home-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 720px) { .home-grid { grid-template-columns: 1fr 1fr; } }
+    .home-card .panel-title { margin-bottom: 6px; }
+    .home-resume-name { font-family: var(--font-ui); font-size: 17px; font-weight: 800; margin: 4px 0 2px; }
+    .home-resume-hint { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+    .next-card { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+    .next-side { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .next-card .cd-suffix { color: var(--muted); font-size: 13px; font-weight: 600; }
+    .home-verse-ar {
+      direction: rtl; text-align: right;
+      font-family: var(--font-ar);
+      font-size: clamp(20px, 4.2vw, 25px); line-height: 2;
+      margin: 6px 0 8px;
+    }
+    .home-verse-tr { margin: 0 0 4px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    /* ---------- Araçlar: karolarda ---------- */
+    .tools-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .tool-tile {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+      padding: 16px 14px; min-height: 112px;
+      border-radius: 16px; text-align: left;
+      background: var(--card); border: 1px solid var(--card-border);
+    }
+    .tool-tile .t-ico { font-size: 26px; line-height: 1; }
+    .tool-tile b { font-family: var(--font-ui); font-size: 15px; color: var(--text); }
+    .tool-tile small { color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .tool-tile:hover { border-color: var(--accent-2); }
+    .tool-panel[hidden] { display: none; }
+
+    /* ---------- Ayarlar satırları ---------- */
+    .set-item {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .set-item summary {
+      list-style: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 15px 16px;
+      font-family: var(--font-ui); font-weight: 700; font-size: 14.5px;
+    }
+    .set-item summary::-webkit-details-marker { display: none; }
+    .set-item summary::after {
+      content: "›"; color: var(--muted); font-size: 19px; font-weight: 400;
+      transition: transform .15s ease;
+    }
+    .set-item[open] summary { color: var(--accent); }
+    .set-item[open] summary::after { transform: rotate(90deg); }
+    .set-body { padding: 2px 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+    .set-body a { color: var(--accent-2); font-weight: 600; text-decoration: none; }
+    .set-body .hint:first-child { margin-top: 0; }
+
     /* ---------- Üst bildirim (toast) ---------- */
     .toast-wrap {
       position: fixed; top: 66px; left: 50%; transform: translateX(-50%);
@@ -723,44 +788,57 @@
           <button id="themeToggle" class="icon-btn ghost" type="button" title="Tema">🌙</button>
         </div>
       </div>
-
-      <!-- Geçiş çubuğu -->
-      <nav class="tabbar" aria-label="Bölümler">
-        <button class="tab-btn active" data-page="quran" type="button">📖 Kur'an <span id="favBadge" class="badge">0</span></button>
-        <button class="tab-btn" data-page="random" type="button">🎲 Rastgele</button>
-        <button class="tab-btn" data-page="tools" type="button">📿 Araçlar</button>
-      </nav>
     </div>
   </header>
 
   <div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
 
   <div class="wrap layout">
-    <!-- ============ SOL: VAKİTLER ============ -->
-    <aside class="side side-left">
-      <div class="panel">
-        <div class="panel-title"><span>🕌 Vakitler</span><button id="calShortcut" class="mini-refresh" type="button" title="Aylık vakit tablosu">📅</button></div>
-        <p id="hijriLine" class="hijri-line">—</p>
-        <label class="geo-field">
-          Ülke
-          <select id="countrySelect">
-            <option value="TR">Turkey</option>
-          </select>
-        </label>
-        <label class="geo-field">
-          Şehir
-          <select id="citySelect"></select>
-          <input id="cityInput" hidden placeholder="Bu ülkede şehir listesi yok — yaz…" autocomplete="off" />
-        </label>
-        <ul id="prayerList" class="prayer-list">
-          <li><span class="p-name">Yükleniyor…</span></li>
-        </ul>
-      </div>
-    </aside>
-
     <!-- ============ ORTA: İÇERİK ============ -->
     <main class="center">
-    <!-- ============ SAYFA 1: RASTGELE ============ -->
+    <!-- ============ SAYFA 1: ANA EKRAN ============ -->
+    <section id="pageHome" class="page">
+      <div class="home-hero">
+        <p class="hero-tag">Huzur, Kur'an'da...</p>
+        <p class="hero-sub">Ayetler, vakitler, zikir — hepsi tek yerde, sade ve reklamsız.</p>
+      </div>
+
+      <div class="home-grid">
+        <div class="panel home-card">
+          <div class="panel-title"><span>📖 Kaldığınız yerden devam et</span></div>
+          <div id="homeResumeName" class="home-resume-name">—</div>
+          <p id="homeResumeHint" class="home-resume-hint">Son okuduğunuz sûre</p>
+          <button id="homeResumeBtn" class="btn-block primary" type="button">Okumaya devam et →</button>
+        </div>
+
+        <div class="panel home-card">
+          <div class="panel-title"><span>🕌 Sıradaki Namaz</span><button id="homeToPrayer" class="mini-refresh" type="button" title="Vakitler sayfası">›</button></div>
+          <div class="next-card">
+            <div>
+              <div class="next-name" data-next-name>—</div>
+              <div class="next-time" data-next-time>--:--</div>
+            </div>
+            <div class="next-side">
+              <div class="countdown" data-countdown>--:--:--</div>
+              <span class="cd-suffix">kaldı</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel home-card">
+        <div class="panel-title"><span>★ Günün Ayeti</span></div>
+        <p id="homeVerseAr" class="home-verse-ar">…</p>
+        <p id="homeVerseTr" class="home-verse-tr">Yükleniyor…</p>
+        <p id="homeVerseRef" class="count">—</p>
+        <div class="hero-actions">
+          <button id="homeVerseNew" class="primary" type="button">↻ Rastgele</button>
+          <button id="homeVerseOpen" type="button">Detaylı aç →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SAYFA 2: RASTGELE ============ -->
     <section id="pageRandom" class="page" hidden>
     <section id="viewRandom" class="view">
       <div class="controls">
@@ -811,12 +889,12 @@
     </section>
     </section><!-- /pageRandom -->
 
-    <!-- ============ SAYFA 2: KUR'AN ============ -->
-    <section id="pageQuran" class="page">
+    <!-- ============ SAYFA 3: KUR'AN ============ -->
+    <section id="pageQuran" class="page" hidden>
       <div class="subbar" aria-label="Kur'an bölümleri">
         <button class="sub-btn active" data-sub="surah" type="button">📖 Sûreler</button>
         <button class="sub-btn" data-sub="search" type="button">🔍 Ara</button>
-        <button class="sub-btn" data-sub="favorites" type="button">★ Favoriler</button>
+        <button class="sub-btn" data-sub="favorites" type="button">★ Favoriler <span id="favBadge" class="badge">0</span></button>
       </div>
 
       <!-- ============ SÛRE LİSTESİ + OKUYUCU ============ -->
@@ -885,34 +963,33 @@
     </section>
     </section><!-- /pageQuran -->
 
-    <!-- ============ SAYFA 3: ARAÇLAR ============ -->
-    <section id="pageTools" class="page" hidden>
-      <div class="panel">
-        <div class="panel-title"><span>📿 Tesbih</span></div>
-        <div id="tasbihChips" class="tasbih-chips"></div>
-        <div id="tasbihAr" class="tasbih-ar">—</div>
-        <div id="tasbihTr" class="tasbih-tr">—</div>
-        <button id="tasbihRing" class="tasbih-ring" type="button" aria-label="Tesbihat">0</button>
-        <div id="tasbihMeta" class="tasbih-meta">—</div>
-        <button id="tasbihReset" class="btn-block" type="button">↺ Sıfırla</button>
-      </div>
+    <!-- ============ SAYFA 4: VAKİTLER ============ -->
+    <section id="pagePrayer" class="page" hidden>
+      <div class="section-head"><h2>Vakitler</h2><span id="prayerCity" class="count">—</span></div>
 
       <div class="panel">
-        <div class="panel-title"><span>🔢 Zikirmatik</span><span id="zmStats" class="count"></span></div>
-        <input id="zmDhikr" class="zm-input" type="text" maxlength="80" placeholder="Zikir metni (örn. Estağfirullah)" autocomplete="off" />
-        <div class="zm-row">
-          <label>Hedef <input id="zmTarget" type="number" inputmode="numeric" min="1" max="1000000" step="1" /></label>
-          <span id="zmProgress" class="count">0 / 100</span>
-        </div>
-        <button id="zmTap" class="zm-tap" type="button" aria-label="Zikir sayacı">0</button>
-        <div class="zm-bar"><span id="zmBarFill"></span></div>
-        <div class="zm-row">
-          <span id="zmNote" class="count">—</span>
-          <button id="zmReset" type="button" title="Sayacı sıfırla (istatistikler korunur)">↺ Sıfırla</button>
+        <p id="hijriLine" class="hijri-line">—</p>
+        <div class="next-card">
+          <div>
+            <div class="next-name" data-next-name>—</div>
+            <div class="next-time" data-next-time>--:--</div>
+          </div>
+          <div class="next-side">
+            <div class="countdown" data-countdown>--:--:--</div>
+            <span class="cd-suffix">kaldı</span>
+          </div>
         </div>
       </div>
 
       <div class="panel">
+        <div class="panel-title"><span>🕌 Bugünkü Vakitler</span></div>
+        <ul id="prayerList" class="prayer-list">
+          <li><span class="p-name">Yükleniyor…</span></li>
+        </ul>
+        <button id="calShortcut" class="btn-block" type="button" style="margin-top: 10px">📅 Aylık Vakitler</button>
+      </div>
+
+      <div class="panel" id="calPanel" hidden>
         <div class="panel-title"><span>📅 Aylık Vakit Tablosu</span></div>
         <div class="cal-nav">
           <button id="calPrev" class="mini-refresh" type="button" title="Önceki ay">◀</button>
@@ -921,43 +998,6 @@
         </div>
         <p id="calHint" class="hint">—</p>
         <div id="calWrap"><div class="state"><div class="spinner"></div></div></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title"><span>🤲 Dualar</span></div>
-        <div id="duaList"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title"><span>☪ Esmaül Hüsna</span><span id="esmaCount" class="count"></span></div>
-        <input id="esmaSearch" class="esma-search" type="search" placeholder="İsme göre ara…" autocomplete="off" />
-        <div id="esmaGrid" class="esma-grid"></div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-title"><span>💰 Zekât Hesaplama</span></div>
-        <div class="zakat-grid">
-          <label class="geo-field">Zekâta esas varlık (₺)
-            <input id="zakAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="örn. 150000" />
-          </label>
-          <label class="geo-field">Altın gram fiyatı (₺)
-            <input id="zakGold" type="number" inputmode="decimal" min="0" step="any" placeholder="örn. 5000" />
-          </label>
-          <button id="zakBtn" class="btn-block" type="button">💰 Hesapla</button>
-        </div>
-        <div id="zakRes" class="zakat-res" hidden></div>
-        <p class="hint">Nisâb: 85 g altın karşılığı (Hanefî) · Zekât oranı: %2,5. Hesaplama bilgilendirme amaçlıdır.</p>
-      </div>
-    </section>
-    </main>
-
-    <!-- ============ SAĞ: SIRADAKİ VAKİT + SES ============ -->
-    <aside class="side side-right">
-      <div class="panel">
-        <div class="panel-title"><span>⏳ Sıradaki Vakit</span></div>
-        <div id="nextName" class="next-name">—</div>
-        <div id="nextTime" class="next-time">--:--</div>
-        <div id="countdown" class="countdown">--:--:--</div>
       </div>
 
       <div class="panel">
@@ -985,7 +1025,85 @@
           <button id="weatherApply" class="btn-block" type="button">✓ Uygula</button>
         </div>
       </div>
+    </section>
 
+    <!-- ============ SAYFA 5: ARAÇLAR ============ -->
+    <section id="pageTools" class="page" hidden>
+      <div id="toolsGrid" class="tools-grid">
+        <button class="tool-tile" data-tool="tesbih" type="button"><span class="t-ico">📿</span><b>Tesbih</b><small>Zikir, huzur bul</small></button>
+        <button class="tool-tile" data-tool="zikirmatik" type="button"><span class="t-ico">🔢</span><b>Zikirmatik</b><small>Serbest hedef, sayaç</small></button>
+        <button class="tool-tile" data-tool="dualar" type="button"><span class="t-ico">🤲</span><b>Dualar</b><small>Duaların gücü</small></button>
+        <button class="tool-tile" data-tool="esma" type="button"><span class="t-ico">☪️</span><b>Esmaül Hüsna</b><small>En güzel isimler</small></button>
+        <button class="tool-tile" data-tool="kible" type="button"><span class="t-ico">🧭</span><b>Kıble</b><small>Kıblemize dön</small></button>
+        <button class="tool-tile" data-tool="zekat" type="button"><span class="t-ico">💰</span><b>Zekât</b><small>Paylaştır, çoğalır</small></button>
+        <button class="tool-tile" data-tool="ezan" type="button"><span class="t-ico">🔊</span><b>Ezan</b><small>Vaktinde ses</small></button>
+      </div>
+
+      <div id="toolView" hidden>
+      <div class="section-head"><h2 id="toolTitle">—</h2><button id="toolBack" class="mini-refresh" type="button">← Araçlar</button></div>
+
+      <div class="tool-panel" data-tool="tesbih">
+      <div class="panel">
+        <div class="panel-title"><span>📿 Tesbih</span></div>
+        <div id="tasbihChips" class="tasbih-chips"></div>
+        <div id="tasbihAr" class="tasbih-ar">—</div>
+        <div id="tasbihTr" class="tasbih-tr">—</div>
+        <button id="tasbihRing" class="tasbih-ring" type="button" aria-label="Tesbihat">0</button>
+        <div id="tasbihMeta" class="tasbih-meta">—</div>
+        <button id="tasbihReset" class="btn-block" type="button">↺ Sıfırla</button>
+      </div>
+      </div><!-- /tool: tesbih -->
+
+      <div class="tool-panel" data-tool="zikirmatik" hidden>
+      <div class="panel">
+        <div class="panel-title"><span>🔢 Zikirmatik</span><span id="zmStats" class="count"></span></div>
+        <input id="zmDhikr" class="zm-input" type="text" maxlength="80" placeholder="Zikir metni (örn. Estağfirullah)" autocomplete="off" />
+        <div class="zm-row">
+          <label>Hedef <input id="zmTarget" type="number" inputmode="numeric" min="1" max="1000000" step="1" /></label>
+          <span id="zmProgress" class="count">0 / 100</span>
+        </div>
+        <button id="zmTap" class="zm-tap" type="button" aria-label="Zikir sayacı">0</button>
+        <div class="zm-bar"><span id="zmBarFill"></span></div>
+        <div class="zm-row">
+          <span id="zmNote" class="count">—</span>
+          <button id="zmReset" type="button" title="Sayacı sıfırla (istatistikler korunur)">↺ Sıfırla</button>
+        </div>
+      </div>
+      </div><!-- /tool: zikirmatik -->
+
+      <div class="tool-panel" data-tool="dualar" hidden>
+      <div class="panel">
+        <div class="panel-title"><span>🤲 Dualar</span></div>
+        <div id="duaList"></div>
+      </div>
+      </div><!-- /tool: dualar -->
+
+      <div class="tool-panel" data-tool="esma" hidden>
+      <div class="panel">
+        <div class="panel-title"><span>☪ Esmaül Hüsna</span><span id="esmaCount" class="count"></span></div>
+        <input id="esmaSearch" class="esma-search" type="search" placeholder="İsme göre ara…" autocomplete="off" />
+        <div id="esmaGrid" class="esma-grid"></div>
+      </div>
+      </div><!-- /tool: esma -->
+
+      <div class="tool-panel" data-tool="zekat" hidden>
+      <div class="panel">
+        <div class="panel-title"><span>💰 Zekât Hesaplama</span></div>
+        <div class="zakat-grid">
+          <label class="geo-field">Zekâta esas varlık (₺)
+            <input id="zakAmt" type="number" inputmode="decimal" min="0" step="any" placeholder="örn. 150000" />
+          </label>
+          <label class="geo-field">Altın gram fiyatı (₺)
+            <input id="zakGold" type="number" inputmode="decimal" min="0" step="any" placeholder="örn. 5000" />
+          </label>
+          <button id="zakBtn" class="btn-block" type="button">💰 Hesapla</button>
+        </div>
+        <div id="zakRes" class="zakat-res" hidden></div>
+        <p class="hint">Nisâb: 85 g altın karşılığı (Hanefî) · Zekât oranı: %2,5. Hesaplama bilgilendirme amaçlıdır.</p>
+      </div>
+      </div><!-- /tool: zekat -->
+
+      <div class="tool-panel" data-tool="kible" hidden>
       <div class="panel">
         <div class="panel-title"><span>🧭 Kıble Bulucu</span></div>
         <div class="compass">
@@ -1005,7 +1123,9 @@
         <button id="qiblaStart" class="btn-block" type="button">▶ Pusulayı Başlat</button>
         <p class="hint">Telefon manyetometresiyle çalışır; metal ve mıknatıstan uzak tutun.</p>
       </div>
+      </div><!-- /tool: kible -->
 
+      <div class="tool-panel" data-tool="ezan" hidden>
       <div class="panel">
         <div class="panel-title"><span>🔊 Ezan Sesi</span></div>
         <div class="setting-row">
@@ -1023,30 +1143,86 @@
         <p class="hint">Ses, sayfada ilk dokunuştan sonra aktifleşir (tarayıcı kuralı).</p>
         <p class="hint">Ezan sesi: Atcovi — Wikimedia Commons (CC BY-SA 4.0)</p>
       </div>
+      </div><!-- /tool: ezan -->
+      </div><!-- /toolView -->
+    </section>
 
-      <div class="panel">
-        <div class="panel-title"><span>🔔 Bildirimler</span></div>
-        <button id="pushBtn" class="pill-btn" type="button">🔔 Bildirimleri Aç</button>
-        <button id="pushTest" class="btn-block" type="button" hidden>🧪 Test bildirimi (15 sn)</button>
-        <p id="pushHint" class="hint">Kapalı. Açınca izin istenir; uygulama kapalıyken de vakit bildirimi alırsınız (ntfy.sh).</p>
-      </div>
-    </aside>
+    <!-- ============ SAYFA 6: AYARLAR ============ -->
+    <section id="pageSettings" class="page" hidden>
+      <div class="section-head"><h2>Ayarlar</h2></div>
+
+      <details class="set-item" open>
+        <summary>📍 Konum</summary>
+        <div class="set-body">
+          <label class="geo-field">Ülke
+            <select id="countrySelect">
+              <option value="TR">Turkey</option>
+            </select>
+          </label>
+          <label class="geo-field">Şehir
+            <select id="citySelect"></select>
+            <input id="cityInput" hidden placeholder="Bu ülkede şehir listesi yok — yaz…" autocomplete="off" />
+          </label>
+          <p class="hint">Vakitler, takvim ve bildirimler bu konuma göre hesaplanır.</p>
+        </div>
+      </details>
+
+      <details class="set-item">
+        <summary>🔔 Bildirimler</summary>
+        <div class="set-body">
+          <button id="pushBtn" class="pill-btn" type="button">🔔 Bildirimleri Aç</button>
+          <button id="pushTest" class="btn-block" type="button" hidden>🧪 Test bildirimi (15 sn)</button>
+          <p id="pushHint" class="hint">Kapalı. Açınca izin istenir; uygulama kapalıyken de vakit bildirimi alırsınız (ntfy.sh).</p>
+        </div>
+      </details>
+
+      <details class="set-item">
+        <summary>🌙 Görünüm</summary>
+        <div class="set-body">
+          <div class="setting-row"><span>Koyu / Açık tema</span><button id="setThemeBtn" class="icon-btn" type="button">🌙</button></div>
+          <p class="hint">Tercihiniz cihazınızda saklanır.</p>
+        </div>
+      </details>
+
+      <details class="set-item">
+        <summary>ℹ️ Hakkında</summary>
+        <div class="set-body">
+          <p class="hint">Quran (القرآن) — sade, reklamsız Kur'an PWA'sı. Ayet: AlQuran Cloud · Vakit: AlAdhan · Bildirim: ntfy.sh</p>
+          <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
+          <p class="hint">Sürüm: Quran v1.6.0</p>
+        </div>
+      </details>
+    </section>
+    </main>
+
   </div>
 
   <footer class="wrap footer-links">
     <div class="retro-logo" aria-label="Retro+">RΞTRO<span class="plus">+</span></div>
     <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
-    <span class="ver"> · Quran v1.5.0</span>
+    <span class="ver"> · Quran v1.6.0</span>
   </footer>
+
+  <!-- ============ ALT GEZİNME ============ -->
+  <nav class="bottomnav" aria-label="Bölümler">
+    <button class="nav-btn active" data-page="home" type="button"><span class="n-ico">🏠</span>Ana</button>
+    <button class="nav-btn" data-page="quran" type="button"><span class="n-ico">📖</span>Kur'an</button>
+    <button class="nav-btn" data-page="prayer" type="button"><span class="n-ico">🕌</span>Vakitler</button>
+    <button class="nav-btn" data-page="tools" type="button"><span class="n-ico">📿</span>Araçlar</button>
+    <button class="nav-btn" data-page="settings" type="button"><span class="n-ico">⚙️</span>Ayarlar</button>
+  </nav>
 
   <script type="module">
     const API = 'https://api.alquran.cloud/v1';
 
     const els = {
-      tabBtns: [...document.querySelectorAll('.tab-btn')],
+      navBtns: [...document.querySelectorAll('.nav-btn')],
+      pageHome: document.getElementById('pageHome'),
       pageQuran: document.getElementById('pageQuran'),
       pageRandom: document.getElementById('pageRandom'),
+      pagePrayer: document.getElementById('pagePrayer'),
       pageTools: document.getElementById('pageTools'),
+      pageSettings: document.getElementById('pageSettings'),
       subBtns: [...document.querySelectorAll('.sub-btn')],
       viewSurah: document.getElementById('viewSurah'),
       viewSearch: document.getElementById('viewSearch'),
@@ -1119,15 +1295,30 @@
       favList: document.getElementById('favList'),
       favCount: document.getElementById('favCount'),
       favBadge: document.getElementById('favBadge'),
+      homeResumeName: document.getElementById('homeResumeName'),
+      homeResumeHint: document.getElementById('homeResumeHint'),
+      homeResumeBtn: document.getElementById('homeResumeBtn'),
+      homeVerseAr: document.getElementById('homeVerseAr'),
+      homeVerseTr: document.getElementById('homeVerseTr'),
+      homeVerseRef: document.getElementById('homeVerseRef'),
+      homeVerseNew: document.getElementById('homeVerseNew'),
+      homeVerseOpen: document.getElementById('homeVerseOpen'),
+      homeToPrayer: document.getElementById('homeToPrayer'),
+      prayerCity: document.getElementById('prayerCity'),
+      calPanel: document.getElementById('calPanel'),
+      toolsGrid: document.getElementById('toolsGrid'),
+      toolTiles: [...document.querySelectorAll('.tool-tile')],
+      toolPanels: [...document.querySelectorAll('.tool-panel')],
+      toolView: document.getElementById('toolView'),
+      toolTitle: document.getElementById('toolTitle'),
+      toolBack: document.getElementById('toolBack'),
+      setThemeBtn: document.getElementById('setThemeBtn'),
       clock: document.getElementById('clock'),
       countrySelect: document.getElementById('countrySelect'),
       citySelect: document.getElementById('citySelect'),
       cityInput: document.getElementById('cityInput'),
       hijriLine: document.getElementById('hijriLine'),
       prayerList: document.getElementById('prayerList'),
-      nextName: document.getElementById('nextName'),
-      nextTime: document.getElementById('nextTime'),
-      countdown: document.getElementById('countdown'),
       soundOn: document.getElementById('soundOn'),
       soundMode: document.getElementById('soundMode'),
       testSound: document.getElementById('testSound'),
@@ -1151,7 +1342,7 @@
       pushHint: document.getElementById('pushHint'),
     };
 
-    const state = { current: null, page: 'quran', sub: 'surah' };
+    const state = { current: null, page: 'home', sub: 'surah' };
     state.silentBoot = true;
     state.wantPlay = false;
 
@@ -1213,18 +1404,20 @@
       };
     }
 
-    /* ---------- Geçiş çubuğu (3 sayfa) ---------- */
+    /* ---------- Gezinme (5 sayfa + rastgele) ---------- */
     function setPage(name) {
       state.page = name;
-      els.tabBtns.forEach((b) => b.classList.toggle('active', b.dataset.page === name));
-      els.pageQuran.hidden = name !== 'quran';
+      const nav = name === 'random' ? 'home' : name;
+      els.navBtns.forEach((b) => b.classList.toggle('active', b.dataset.page === nav));
+      els.pageHome.hidden = name !== 'home';
       els.pageRandom.hidden = name !== 'random';
+      els.pageQuran.hidden = name !== 'quran';
+      els.pagePrayer.hidden = name !== 'prayer';
       els.pageTools.hidden = name !== 'tools';
-      if (name === 'tools') {
-        const now = new Date();
-        loadCalendar(calYM ? calYM.y : now.getFullYear(),
-          calYM ? calYM.m : now.getMonth() + 1).catch(() => {});
-      }
+      els.pageSettings.hidden = name !== 'settings';
+      if (name === 'tools') showToolsGrid();
+      if (name === 'random' && !state.current) loadRandom();
+      window.scrollTo(0, 0);
     }
     function setSub(name) {
       state.sub = name;
@@ -1233,8 +1426,28 @@
       els.viewSearch.hidden = name !== 'search';
       els.viewFavorites.hidden = name !== 'favorites';
     }
-    els.tabBtns.forEach((b) => b.addEventListener('click', () => setPage(b.dataset.page)));
+    els.navBtns.forEach((b) => b.addEventListener('click', () => setPage(b.dataset.page)));
     els.subBtns.forEach((b) => b.addEventListener('click', () => setSub(b.dataset.sub)));
+
+    /* ---------- Araçlar: karo → panel ---------- */
+    const TOOL_TITLES = {
+      tesbih: 'Tesbih', zikirmatik: 'Zikirmatik', dualar: 'Dualar',
+      esma: 'Esmaül Hüsna', kible: 'Kıble Bulucu', zekat: 'Zekât Hesaplama', ezan: 'Ezan Sesi',
+    };
+    function showToolsGrid() {
+      els.toolsGrid.hidden = false;
+      els.toolView.hidden = true;
+    }
+    function openTool(name) {
+      if (!TOOL_TITLES[name]) return;
+      els.toolsGrid.hidden = true;
+      els.toolView.hidden = false;
+      els.toolTitle.textContent = TOOL_TITLES[name];
+      els.toolPanels.forEach((p) => { p.hidden = p.dataset.tool !== name; });
+      window.scrollTo(0, 0);
+    }
+    els.toolTiles.forEach((t) => t.addEventListener('click', () => openTool(t.dataset.tool)));
+    els.toolBack.addEventListener('click', showToolsGrid);
 
     /* ---------- Kart durumları ---------- */
     function showState(name) {
@@ -1308,6 +1521,44 @@
         els.newBtn.disabled = false;
       }
     }
+
+    /* ---------- Ana sayfa ---------- */
+    function renderHome() {
+      const n = +(localStorage.getItem('qz_last_surah') || 0);
+      if (n >= 1 && n <= 114) {
+        els.homeResumeName.textContent = `${SURAHS_TR[n - 1]} Sûresi`;
+        els.homeResumeHint.textContent = `${n}. sûre · kaldığınız yerden devam edin`;
+        els.homeResumeBtn.textContent = 'Okumaya devam et →';
+      } else {
+        els.homeResumeName.textContent = 'Kur\u2019an okumaya başlayın';
+        els.homeResumeHint.textContent = 'İlk sûre: Fâtiha';
+        els.homeResumeBtn.textContent = 'Fâtiha\u2019yı aç →';
+      }
+    }
+    async function loadHomeVerse() {
+      els.homeVerseAr.textContent = '…';
+      els.homeVerseTr.textContent = 'Yükleniyor…';
+      els.homeVerseRef.textContent = '—';
+      try {
+        const res = await fetchJSON(`${API}/ayah/random/editions/quran-uthmani,${els.translationSelect.value}`);
+        const { arabic, translation } = pickItems(res);
+        els.homeVerseAr.textContent = arabic.text.trim();
+        els.homeVerseTr.textContent = translation?.text?.trim() || '';
+        els.homeVerseRef.textContent =
+          `${arabic.surah.englishName} ${arabic.surah.number}:${arabic.numberInSurah} · ${arabic.surah.englishNameTranslation}`;
+      } catch (_) {
+        els.homeVerseTr.textContent = 'Ayet getirilemedi — "↻ Rastgele" ile tekrar deneyin.';
+      }
+    }
+    els.homeResumeBtn.addEventListener('click', () => {
+      const n = +(localStorage.getItem('qz_last_surah') || 1);
+      setPage('quran');
+      setSub('surah');
+      openSurah(n >= 1 && n <= 114 ? n : 1);
+    });
+    els.homeToPrayer.addEventListener('click', () => setPage('prayer'));
+    els.homeVerseNew.addEventListener('click', loadHomeVerse);
+    els.homeVerseOpen.addEventListener('click', () => setPage('random'));
 
     /* ---------- Belirli ayet (arama/favori tıklaması) ---------- */
     async function loadAyah(ref, auto = false) {
@@ -1634,6 +1885,9 @@
       const t = prayerState.today;
       if (!t) return;
       const next = nextPrayer();
+      if (els.prayerCity) {
+        els.prayerCity.textContent = getCountry() === 'loc' ? '📍 Konum' : getCity();
+      }
 
       const rows = PRAYERS.map((p) => {
         const time = t[p.key];
@@ -1683,22 +1937,24 @@
 
     function updateNextPanel() {
       const n = nextPrayer();
-      if (!n) {
-        els.nextName.textContent = '—';
-        els.nextTime.textContent = '--:--';
-        els.countdown.textContent = '--:--:--';
-        return;
-      }
-      const label = n.source === 'tomorrow' ? 'Yarın' : 'Bugün';
-      els.nextName.innerHTML = `${label} · <b>${n.p.icon} ${n.p.name}</b>`;
-      els.nextTime.textContent = n.time;
-      const s = Math.floor(n.msLeft / 1000);
-      const hh = Math.floor(s / 3600);
-      const mm = Math.floor((s % 3600) / 60);
-      const ss = s % 60;
-      els.countdown.textContent = hh > 0
-        ? `${pad(hh)}:${pad(mm)}:${pad(ss)}`
-        : `${pad(mm)}:${pad(ss)}`;
+      document.querySelectorAll('[data-next-name]').forEach((el) => {
+        el.innerHTML = n
+          ? `${n.source === 'tomorrow' ? 'Yarın' : 'Bugün'} · <b>${n.p.icon} ${n.p.name}</b>`
+          : '—';
+      });
+      document.querySelectorAll('[data-next-time]').forEach((el) => {
+        el.textContent = n ? n.time : '--:--';
+      });
+      document.querySelectorAll('[data-countdown]').forEach((el) => {
+        if (!n) { el.textContent = '--:--:--'; return; }
+        const s = Math.floor(n.msLeft / 1000);
+        const hh = Math.floor(s / 3600);
+        const mm = Math.floor((s % 3600) / 60);
+        const ss = s % 60;
+        el.textContent = hh > 0
+          ? `${pad(hh)}:${pad(mm)}:${pad(ss)}`
+          : `${pad(mm)}:${pad(ss)}`;
+      });
     }
 
     async function loadPrayerTimes(force = false) {
@@ -2472,6 +2728,7 @@
       } else {
         els.surahResume.hidden = true;
       }
+      renderHome();
     }
 
     async function openSurah(n, autoPlay = false) {
@@ -2707,7 +2964,15 @@
     }
     els.calPrev.addEventListener('click', () => calStep(-1));
     els.calNext.addEventListener('click', () => calStep(1));
-    els.calShortcut.addEventListener('click', () => setPage('tools'));
+    els.calShortcut.addEventListener('click', () => {
+      setPage('prayer');
+      els.calPanel.hidden = !els.calPanel.hidden;
+      if (!els.calPanel.hidden) {
+        const now = new Date();
+        loadCalendar(calYM ? calYM.y : now.getFullYear(),
+          calYM ? calYM.m : now.getMonth() + 1).catch(() => {});
+      }
+    });
 
     /* ================= TEŞBİH ================= */
     const TASBIH = [
@@ -3152,18 +3417,24 @@
     }, 60000);
 
     /* ---------- Tema ---------- */
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    document.documentElement.dataset.theme = savedTheme;
-    els.themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-    els.themeToggle.addEventListener('click', () => {
-      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    function applyTheme(next) {
       document.documentElement.dataset.theme = next;
       localStorage.setItem('theme', next);
       els.themeToggle.textContent = next === 'dark' ? '☀️' : '🌙';
-    });
+      els.setThemeBtn.textContent = next === 'dark' ? '☀️' : '🌙';
+    }
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.dataset.theme = savedTheme;
+    els.themeToggle.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    els.setThemeBtn.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+    const toggleTheme = () =>
+      applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+    els.themeToggle.addEventListener('click', toggleTheme);
+    els.setThemeBtn.addEventListener('click', toggleTheme);
 
     updateFavUI();
-    loadRandom();
+    renderHome();
+    loadHomeVerse();
   </script>
 </body>
 </html>
