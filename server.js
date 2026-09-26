@@ -46,4 +46,4 @@ http.createServer(async (req, res) => {
   } catch {
     res.writeHead(404).end('Not found');
   }
-}).listen(port, () => console.log(`Quran (القرآن) → http://localhost:${port}`));
+}).listen(port, () => console.log(`PureQuran → http://localhost:${port}`));

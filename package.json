@@ -1,9 +1,9 @@
 {
-  "name": "quran-app",
-  "version": "1.6.0",
+  "name": "purequran",
+  "version": "1.6.1",
   "private": true,
   "type": "module",
-  "description": "Quran (القرآن) — sureler, ezan vakitleri, tesbih, dualar (PWA)",
+  "description": "PureQuran — sureler, ezan vakitleri, tesbih, dualar (PWA)",
   "scripts": {
     "start": "node server.js"
   }

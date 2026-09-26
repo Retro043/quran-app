@@ -1,4 +1,4 @@
-# Quran (القرآن) 📖
+# PureQuran 📖
 
 Ayetler, ezan vakitleri, kıble pusulası ve hava durumu — sade, hızlı, reklamsız **PWA**.
 

@@ -94,7 +94,7 @@ self.addEventListener('push', (e) => {
   let data = null;
   try { data = e.data ? e.data.json() : null; } catch (_) {}
   e.waitUntil((async () => {
-    let title = 'Quran';
+    let title = 'PureQuran';
     let body = '';
     let tag = '';
     const isExpiring = data && data.event === 'subscription_expiring';

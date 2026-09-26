@@ -1,6 +1,6 @@
 {
-  "name": "Quran (القرآن)",
-  "short_name": "Quran",
+  "name": "PureQuran",
+  "short_name": "PureQuran",
   "description": "Ayetler, ezan vakitleri, hava durumu, arama ve favoriler",
   "id": "./",
   "start_url": "./index.html",
