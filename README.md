@@ -13,6 +13,7 @@ Ayetler, ezan vakitleri, kıble pusulası ve hava durumu — sade, hızlı, rekl
 - 🔍 **Kelime araması** ve ★ **Favoriler** (cihazda saklanır)
 - 📅 **Aylık vakit tablosu** — şehir/konumuna göre tam ay, hicri tarihli, çevrimdışı önbellek
 - 📿 **Tesbih** — 6 zikir seçeneği, sayaç + titreşim, hedefte kutlama
+- 🔢 **Zikirmatik** — serbest zikir metni + serbest hedef, büyük dokunma alanı, ilerleme çubuğu, günlük/Toplam istatistik
 - 🤲 **Dualar** — ayet-i kerime ve günlük dualar (Türkçe meal + meal)
 - ☪ **Esmaül Hüsna** — 99 isim (Tirmizî listesi), aramalı
 - 💰 **Zekât hesaplayıcı** — 85 g altın nisâbı, %2,5

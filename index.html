@@ -587,6 +587,25 @@
     @keyframes pulse { 50% { transform: scale(1.05); } }
     .tasbih-meta { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
 
+    /* ---------- Zikirmatik ---------- */
+    .zm-input { width: 100%; margin-bottom: 10px; }
+    .zm-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .zm-row label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+    .zm-row input { width: 100px; padding: 7px 10px; font-size: 13px; text-align: right; }
+    .zm-row button { padding: 7px 12px; font-size: 12px; font-weight: 700; }
+    .zm-tap {
+      width: 100%; padding: 36px 10px; margin: 4px 0 12px;
+      border-radius: 20px; border: 2px solid rgba(61, 220, 151, .55);
+      background: linear-gradient(135deg, rgba(61, 220, 151, .16), rgba(110, 168, 254, .14));
+      font-size: 46px; font-weight: 800; font-variant-numeric: tabular-nums;
+      color: var(--text);
+      transition: transform .08s ease;
+    }
+    .zm-tap:active { transform: scale(.97); }
+    .zm-tap.done { border-color: var(--accent); animation: pulse .35s ease; }
+    .zm-bar { height: 8px; background: var(--card-border); border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
+    .zm-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .2s ease; }
+
     .cal-nav {
       display: flex; align-items: center; justify-content: space-between;
       gap: 10px; margin-bottom: 6px;
@@ -859,6 +878,21 @@
       </div>
 
       <div class="panel">
+        <div class="panel-title"><span>🔢 Zikirmatik</span><span id="zmStats" class="count"></span></div>
+        <input id="zmDhikr" class="zm-input" type="text" maxlength="80" placeholder="Zikir metni (örn. Estağfirullah)" autocomplete="off" />
+        <div class="zm-row">
+          <label>Hedef <input id="zmTarget" type="number" inputmode="numeric" min="1" max="1000000" step="1" /></label>
+          <span id="zmProgress" class="count">0 / 100</span>
+        </div>
+        <button id="zmTap" class="zm-tap" type="button" aria-label="Zikir sayacı">0</button>
+        <div class="zm-bar"><span id="zmBarFill"></span></div>
+        <div class="zm-row">
+          <span id="zmNote" class="count">—</span>
+          <button id="zmReset" type="button" title="Sayacı sıfırla (istatistikler korunur)">↺ Sıfırla</button>
+        </div>
+      </div>
+
+      <div class="panel">
         <div class="panel-title"><span>📅 Aylık Vakit Tablosu</span></div>
         <div class="cal-nav">
           <button id="calPrev" class="mini-refresh" type="button" title="Önceki ay">◀</button>
@@ -982,7 +1016,7 @@
   <footer class="wrap footer-links">
     <div class="retro-logo" aria-label="Retro+">RΞTRO<span class="plus">+</span></div>
     <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
-    <span class="ver"> · Quran v1.3.0</span>
+    <span class="ver"> · Quran v1.4.0</span>
   </footer>
 
   <script type="module">
@@ -1032,6 +1066,14 @@
       zakGold: document.getElementById('zakGold'),
       zakBtn: document.getElementById('zakBtn'),
       zakRes: document.getElementById('zakRes'),
+      zmDhikr: document.getElementById('zmDhikr'),
+      zmTarget: document.getElementById('zmTarget'),
+      zmTap: document.getElementById('zmTap'),
+      zmBarFill: document.getElementById('zmBarFill'),
+      zmProgress: document.getElementById('zmProgress'),
+      zmNote: document.getElementById('zmNote'),
+      zmStats: document.getElementById('zmStats'),
+      zmReset: document.getElementById('zmReset'),
       loading: document.getElementById('loading'),
       loadingText: document.getElementById('loadingText'),
       errorBox: document.getElementById('errorBox'),
@@ -2825,10 +2867,65 @@
       }
     });
 
+    /* ================= ZİKİR MATİK ================= */
+    const zm = { dhikr: 'Estağfirullah', target: 100, count: 0, total: 0, day: '', dayCount: 0 };
+
+    function zmDay() {
+      const d = new Date();
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+    function saveZm() { try { localStorage.setItem('qz_zikir', JSON.stringify(zm)); } catch (_) {} }
+    function renderZm() {
+      const pct = zm.target > 0 ? Math.min(100, (zm.count / zm.target) * 100) : 0;
+      els.zmBarFill.style.width = pct + '%';
+      els.zmTap.textContent = zm.count;
+      els.zmProgress.textContent = `${zm.count} / ${zm.target}`;
+      els.zmStats.textContent = `Bugün: ${zm.dayCount} · Toplam: ${zm.total}`;
+      els.zmNote.textContent = zm.count < zm.target
+        ? `Hedefe kalan: ${zm.target - zm.count}`
+        : `Hedef tamamlandı (+${zm.count - zm.target})`;
+    }
+    function loadZm() {
+      try {
+        const s = JSON.parse(localStorage.getItem('qz_zikir') || 'null');
+        if (s) Object.assign(zm, s);
+      } catch (_) {}
+      if (zm.day !== zmDay()) { zm.day = zmDay(); zm.dayCount = 0; }
+      els.zmDhikr.value = zm.dhikr;
+      els.zmTarget.value = zm.target;
+      renderZm();
+    }
+    els.zmTap.addEventListener('click', () => {
+      zm.count += 1;
+      zm.total += 1;
+      const d = zmDay();
+      if (zm.day !== d) { zm.day = d; zm.dayCount = 0; }
+      zm.dayCount += 1;
+      if (navigator.vibrate) navigator.vibrate(15);
+      if (zm.target > 0 && zm.count % zm.target === 0) {
+        if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+        toast(`🎉 ${zm.dhikr || 'Zikir'}: ${zm.count} tamamlandı!`, true);
+        els.zmTap.classList.add('done');
+        setTimeout(() => els.zmTap.classList.remove('done'), 400);
+      }
+      saveZm();
+      renderZm();
+    });
+    els.zmReset.addEventListener('click', () => { zm.count = 0; saveZm(); renderZm(); });
+    els.zmDhikr.addEventListener('input', () => { zm.dhikr = els.zmDhikr.value; saveZm(); });
+    els.zmTarget.addEventListener('change', () => {
+      const v = Math.max(1, Math.min(1000000, Math.round(+els.zmTarget.value) || 100));
+      zm.target = v;
+      els.zmTarget.value = v;
+      saveZm();
+      renderZm();
+    });
+
     renderTas();
     renderDua();
     renderEsma();
     initZakat();
+    loadZm();
     fillSurahSelect();
     updateResume();
 
