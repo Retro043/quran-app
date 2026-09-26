@@ -1,4 +1,4 @@
-const CACHE = 'quran-app-v7';
+const CACHE = 'quran-app-v8';
 const STATIC = [
   './',
   './index.html',
