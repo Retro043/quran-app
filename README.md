@@ -29,6 +29,7 @@ Ayetler, ezan vakitleri, kıble pusulası ve hava durumu — sade, hızlı, rekl
 ## Teknik
 
 - Tek dosya: `index.html` (vanilla JS, framework yok) — **3 sayfalı arayüz** (Kur'an · Rastgele · Araçlar)
+- Tasarım: **zümrüt + altın** renk paleti (koyu/açık tema), Plus Jakarta Sans (başlık/arayüz) · Inter (metin) · Amiri Quran (Arapça) Google Fonts ile, `prefers-reduced-motion` desteği
 - PWA: `manifest.json`, `sw.js` (kabuk: ağ-öncelikli → güncel sürüm her açılışta gelir; çevrimdışı yedek cache)
 - Yerel sunucu: `npm start` → `http://localhost:5176` (PWA için http origin gerekir)
 

@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1220" />
+  <meta name="theme-color" content="#0a1417" />
   <meta name="description" content="Quran (القرآن) — sûre okuma, ayetler, ezan vakitleri, kıble, hava durumu, tesbih, dualar" />
   <title>Quran (القرآن)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=Amiri:wght@400;700&family=Amiri+Quran&display=swap" rel="stylesheet" />
   <link rel="manifest" href="./manifest.json" />
   <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="./assets/icon-192.png" />
@@ -15,34 +18,41 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <style>
     :root {
-      --bg: #0b1220;
-      --bg-veil: rgba(11, 18, 32, 0.80);
-      --card: rgba(255, 255, 255, 0.06);
+      --bg: #0a1417;
+      --bg-veil: rgba(10, 20, 23, 0.82);
+      --card: rgba(255, 255, 255, 0.055);
       --card-border: rgba(255, 255, 255, 0.10);
-      --text: #e8eefc;
-      --muted: #93a1bd;
-      --accent: #3ddc97;
-      --accent-2: #6ea8fe;
-      --radius: 18px;
-      --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+      --text: #e9f2ee;
+      --muted: #8fa5a0;
+      --accent: #34d399;
+      --accent-2: #efbd5c;
+      --radius: 20px;
+      --shadow: 0 10px 30px rgba(0, 0, 0, .38);
+      --font-ui: "Plus Jakarta Sans", "Inter", "Segoe UI", system-ui, sans-serif;
+      --font-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+      --font-ar: "Amiri Quran", "Amiri", "Noto Naskh Arabic", "Scheherazade New", serif;
+      --font-ar-deco: "Amiri", "Amiri Quran", "Noto Naskh Arabic", serif;
     }
     [data-theme="light"] {
-      --bg: #f4f7fb;
-      --bg-veil: rgba(244, 247, 251, 0.88);
-      --card: rgba(255, 255, 255, 0.9);
-      --card-border: rgba(15, 30, 60, .10);
-      --text: #12203a;
-      --muted: #5b6b86;
-      --shadow: 0 10px 30px rgba(20, 40, 80, .12);
+      --bg: #f4f7f3;
+      --bg-veil: rgba(244, 247, 243, 0.90);
+      --card: rgba(255, 255, 255, 0.92);
+      --card-border: rgba(16, 46, 38, .10);
+      --text: #132420;
+      --muted: #5a6e68;
+      --accent: #059669;
+      --accent-2: #a07e23;
+      --shadow: 0 10px 30px rgba(20, 50, 40, .12);
     }
 
     * { box-sizing: border-box; }
+    h1, h2, h3, h4 { font-family: var(--font-ui); letter-spacing: -.01em; }
     body {
       margin: 0;
-      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-family: var(--font-body);
       background:
-        radial-gradient(1200px 600px at 80% -10%, rgba(61, 220, 151, .12), transparent 60%),
-        radial-gradient(900px 500px at -10% 30%, rgba(110, 168, 254, .12), transparent 55%),
+        radial-gradient(1200px 600px at 80% -10%, rgba(52, 211, 153, .10), transparent 60%),
+        radial-gradient(900px 500px at -10% 30%, rgba(239, 189, 92, .07), transparent 55%),
         linear-gradient(var(--bg-veil), var(--bg-veil)),
         url('./assets/kaaba.jpg') center / cover no-repeat,
         var(--bg);
@@ -62,11 +72,11 @@
       border-bottom: 1px solid var(--card-border);
     }
     .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 10px; }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-ui); font-weight: 800; font-size: 19px; letter-spacing: -.01em; }
     .brand .logo { font-size: 22px; }
     .brand-ar {
-      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
-      font-weight: 700; color: var(--accent); margin-inline-start: 4px;
+      font-family: var(--font-ar-deco);
+      font-weight: 700; color: var(--accent-2); margin-inline-start: 4px;
     }
     .bar-actions { display: flex; gap: 10px; align-items: center; }
     .clock {
@@ -87,8 +97,9 @@
     .tab-btn {
       flex: 0 0 auto;
       display: flex; align-items: center; gap: 7px;
-      padding: 9px 16px;
+      padding: 9px 16px; min-height: 40px;
       border-radius: 999px;
+      font-family: var(--font-ui);
       font-size: 14px; font-weight: 600;
       background: transparent;
       border: 1px solid var(--card-border);
@@ -113,7 +124,7 @@
       background: var(--card); padding: 10px 14px;
       transition: transform .12s ease, border-color .12s ease, background .12s ease;
     }
-    button { cursor: pointer; }
+    button { cursor: pointer; font-family: var(--font-ui); }
     button:hover, select:hover, input:hover { border-color: var(--accent); }
     button:active { transform: scale(.97); }
     button.primary {
@@ -126,7 +137,7 @@
     input::placeholder { color: var(--muted); }
     input:focus, select:focus, button:focus-visible {
       outline: none; border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(61, 220, 151, .22);
+      box-shadow: 0 0 0 3px rgba(52, 211, 153, .22);
     }
 
     /* ---------- Görünüm / ana ---------- */
@@ -181,15 +192,15 @@
     }
     .chip {
       padding: 4px 10px; border-radius: 999px;
-      background: rgba(110, 168, 254, .14);
-      border: 1px solid rgba(110, 168, 254, .30);
+      background: rgba(239, 189, 92, .14);
+      border: 1px solid rgba(239, 189, 92, .30);
       color: var(--text);
     }
-    .chip.accent { background: rgba(61, 220, 151, .14); border-color: rgba(61, 220, 151, .35); }
+    .chip.accent { background: rgba(52, 211, 153, .14); border-color: rgba(52, 211, 153, .35); }
 
     .ayah-arabic {
       direction: rtl; text-align: center;
-      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-family: var(--font-ar);
       font-size: clamp(26px, 5vw, 40px);
       line-height: 2;
       padding: 34px 24px 18px;
@@ -233,7 +244,7 @@
     .row-ref { color: var(--accent); font-weight: 700; }
     .row-arabic {
       direction: rtl; text-align: right;
-      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-family: var(--font-ar);
       font-size: 20px; line-height: 1.9;
     }
     .row-text {
@@ -251,7 +262,12 @@
       display: flex; align-items: center; justify-content: space-between;
       gap: 10px; margin-bottom: 14px;
     }
-    .section-head h2 { margin: 0; font-size: 17px; }
+    .section-head h2 { margin: 0; font-family: var(--font-ui); font-size: 18px; font-weight: 800; position: relative; padding-left: 15px; }
+    .section-head h2::before {
+      content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      width: 5px; height: 17px; border-radius: 3px;
+      background: linear-gradient(var(--accent), var(--accent-2));
+    }
     .count { font-size: 13px; color: var(--muted); }
 
     /* ---------- Yerleşim: sol/sağ paneller ---------- */
@@ -283,7 +299,8 @@
       padding: 14px;
     }
     .panel-title {
-      font-size: 13px; font-weight: 700;
+      font-family: var(--font-ui);
+      font-size: 13px; font-weight: 700; letter-spacing: .01em;
       margin-bottom: 10px;
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
@@ -304,8 +321,8 @@
     .prayer-list li .p-name { display: flex; align-items: center; gap: 8px; color: var(--muted); }
     .prayer-list li .p-time { font-variant-numeric: tabular-nums; font-weight: 700; }
     .prayer-list li.next {
-      background: linear-gradient(135deg, rgba(61, 220, 151, .16), rgba(110, 168, 254, .14));
-      border-color: rgba(61, 220, 151, .45);
+      background: linear-gradient(135deg, rgba(52, 211, 153, .16), rgba(239, 189, 92, .14));
+      border-color: rgba(52, 211, 153, .45);
     }
     .prayer-list li.next .p-name,
     .prayer-list li.next .p-time { color: var(--text); }
@@ -387,7 +404,7 @@
       border: none; background: transparent; color: var(--muted);
       font-size: 13px; padding: 2px 6px; border-radius: 8px;
     }
-    .mini-refresh:hover { color: var(--accent); background: rgba(61, 220, 151, .12); }
+    .mini-refresh:hover { color: var(--accent); background: rgba(52, 211, 153, .12); }
 
     /* ---------- Durumlar ---------- */
     .state { text-align: center; padding: 50px 20px; color: var(--muted); }
@@ -422,7 +439,7 @@
     .compass {
       position: relative; width: 158px; height: 158px; margin: 6px auto 10px;
       border-radius: 50%; border: 2px solid var(--card-border);
-      background: radial-gradient(circle at 50% 32%, rgba(110, 168, 254, .14), rgba(0, 0, 0, .22));
+      background: radial-gradient(circle at 50% 32%, rgba(239, 189, 92, .14), rgba(0, 0, 0, .22));
       box-shadow: var(--shadow);
     }
     .compass-dial {
@@ -442,12 +459,12 @@
     .qibla-arrow span {
       position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
       color: var(--accent); font-size: 17px;
-      text-shadow: 0 0 8px rgba(61, 220, 151, .65);
+      text-shadow: 0 0 8px rgba(52, 211, 153, .65);
     }
     .compass-center {
       position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
       width: 34px; height: 34px; border-radius: 50%;
-      background: rgba(11, 18, 32, .72); border: 1px solid var(--card-border);
+      background: rgba(10, 20, 23, .75); border: 1px solid var(--card-border);
       display: grid; place-items: center; font-size: 17px; z-index: 2;
     }
     .qibla-readout { text-align: center; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
@@ -482,7 +499,7 @@
       display: flex; align-items: center; justify-content: space-between; gap: 10px;
       padding: 12px 14px; margin-bottom: 14px;
       border: 1px dashed var(--accent); border-radius: 14px;
-      background: rgba(61, 220, 151, .08);
+      background: rgba(52, 211, 153, .08);
       font-size: 13px;
     }
     .resume-bar[hidden] { display: none; }
@@ -500,12 +517,12 @@
       padding: 12px 16px;
       border-bottom: 1px solid var(--card-border);
     }
-    .reader-title { flex: 1 1 auto; font-weight: 700; font-size: 15px; min-width: 140px; }
+    .reader-title { flex: 1 1 auto; font-family: var(--font-ui); font-weight: 800; font-size: 16px; letter-spacing: -.01em; min-width: 140px; }
     .reader-title small { display: block; font-weight: 500; font-size: 11px; color: var(--muted); }
     .reader-play { width: auto; font-size: 13px; font-weight: 700; white-space: nowrap; }
     .basmala {
       direction: rtl; text-align: center;
-      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-family: var(--font-ar);
       font-size: clamp(20px, 4.5vw, 26px);
       color: var(--accent);
       padding: 16px 16px 8px;
@@ -519,7 +536,7 @@
     }
     .ayah-row:hover { background: rgba(255, 255, 255, .03); }
     .ayah-row.playing {
-      background: linear-gradient(135deg, rgba(61, 220, 151, .12), rgba(110, 168, 254, .08));
+      background: linear-gradient(135deg, rgba(52, 211, 153, .12), rgba(239, 189, 92, .08));
       border-left: 3px solid var(--accent);
     }
     .ayah-top {
@@ -530,13 +547,13 @@
     .ayah-num {
       display: inline-grid; place-items: center;
       width: 26px; height: 26px; border-radius: 50%;
-      background: rgba(61, 220, 151, .15);
-      border: 1px solid rgba(61, 220, 151, .40);
+      background: rgba(52, 211, 153, .15);
+      border: 1px solid rgba(52, 211, 153, .40);
       color: var(--accent); font-weight: 700; font-size: 12px;
     }
     .ayah-ar {
       direction: rtl; text-align: right;
-      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-family: var(--font-ar);
       font-size: clamp(21px, 4.2vw, 27px);
       line-height: 2.1;
       margin: 0 0 8px;
@@ -563,7 +580,7 @@
     }
     .tasbih-ar {
       direction: rtl; text-align: center;
-      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-family: var(--font-ar);
       font-size: clamp(24px, 5vw, 30px);
       color: var(--accent);
       margin: 4px 0 2px;
@@ -574,8 +591,8 @@
       width: 172px; height: 172px;
       margin: 10px auto;
       border-radius: 50%;
-      border: 6px solid rgba(61, 220, 151, .55);
-      background: radial-gradient(circle at 50% 30%, rgba(110, 168, 254, .16), rgba(0, 0, 0, .25));
+      border: 6px solid rgba(52, 211, 153, .55);
+      background: radial-gradient(circle at 50% 30%, rgba(239, 189, 92, .16), rgba(0, 0, 0, .25));
       font-size: 46px; font-weight: 800;
       font-variant-numeric: tabular-nums;
       color: var(--text);
@@ -595,8 +612,8 @@
     .zm-row button { padding: 7px 12px; font-size: 12px; font-weight: 700; }
     .zm-tap {
       width: 100%; padding: 36px 10px; margin: 4px 0 12px;
-      border-radius: 20px; border: 2px solid rgba(61, 220, 151, .55);
-      background: linear-gradient(135deg, rgba(61, 220, 151, .16), rgba(110, 168, 254, .14));
+      border-radius: 20px; border: 2px solid rgba(52, 211, 153, .55);
+      background: linear-gradient(135deg, rgba(52, 211, 153, .16), rgba(239, 189, 92, .14));
       font-size: 46px; font-weight: 800; font-variant-numeric: tabular-nums;
       color: var(--text);
       transition: transform .08s ease;
@@ -621,7 +638,7 @@
     .cal th { color: var(--muted); font-size: 10px; font-weight: 700; }
     .cal td.gday { color: var(--accent); font-weight: 700; }
     .cal td.hday { color: var(--muted); font-size: 10px; }
-    .cal tr.today td { background: rgba(61, 220, 151, .14); font-weight: 700; color: var(--text); }
+    .cal tr.today td { background: rgba(52, 211, 153, .14); font-weight: 700; color: var(--text); }
 
     details.dua {
       background: var(--card);
@@ -635,7 +652,7 @@
     .dua-cat:first-child { margin-top: 0; }
     .dua-ar {
       direction: rtl; text-align: right;
-      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-family: var(--font-ar);
       font-size: clamp(19px, 4vw, 23px);
       line-height: 2;
       color: var(--accent);
@@ -653,7 +670,7 @@
     .esma-n { font-size: 10px; color: var(--muted); opacity: .7; }
     .esma-ar {
       direction: rtl; text-align: right;
-      font-family: "Amiri", "Scheherazade New", "Traditional Arabic", serif;
+      font-family: var(--font-ar-deco);
       font-size: 20px; color: var(--accent);
       margin: 2px 0;
     }
@@ -661,9 +678,9 @@
     .zakat-grid { display: grid; gap: 10px; max-width: 420px; }
     .zakat-res {
       margin-top: 12px; padding: 14px;
-      border: 1px dashed rgba(61, 220, 151, .5);
+      border: 1px dashed rgba(52, 211, 153, .5);
       border-radius: 14px;
-      background: rgba(61, 220, 151, .07);
+      background: rgba(52, 211, 153, .07);
       font-size: 14px; line-height: 1.7;
     }
     .zakat-res[hidden] { display: none; }
@@ -690,6 +707,9 @@
     }
     .toast button:hover { color: var(--text); }
     @keyframes toastIn { from { opacity: 0; transform: translateY(-10px); } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
   </style>
 </head>
 <body>
@@ -1016,7 +1036,7 @@
   <footer class="wrap footer-links">
     <div class="retro-logo" aria-label="Retro+">RΞTRO<span class="plus">+</span></div>
     <a href="./privacy.html" target="_blank" rel="noopener">Gizlilik Politikası</a>
-    <span class="ver"> · Quran v1.4.0</span>
+    <span class="ver"> · Quran v1.5.0</span>
   </footer>
 
   <script type="module">
